@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ITAMS: Assets</title>
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <header class="signage">
+    <div class="brand">
+      <span class="mark" aria-hidden="true"></span>
+      <span class="brand-name">ITAMS</span>
+      <span id="tenant-name" class="tenant"></span>
+    </div>
+    <div class="who">
+      <span id="user-name"></span>
+      <span id="user-role" class="role"></span>
+      <button id="logout" class="btn btn-quiet" type="button">Sign out</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="page-head">
+      <h1>Assets</h1>
+      <button id="add-asset" class="btn btn-sign" type="button" hidden>Add asset</button>
+    </div>
+
+    <div class="toolbar">
+      <label class="field"><span>Search serial, model or location</span><input id="search" type="search" maxlength="100"></label>
+      <label class="field"><span>Status</span>
+        <select id="filter-status"><option value="">All statuses</option></select></label>
+      <label class="field"><span>Type</span>
+        <select id="filter-type"><option value="">All types</option></select></label>
+    </div>
+
+    <div id="list-error" class="alert" role="alert" hidden></div>
+    <div id="table-host"></div>
+    <div class="pager">
+      <span id="range" class="muted" aria-live="polite"></span>
+      <span>
+        <button id="prev" class="btn btn-quiet" type="button">Previous</button>
+        <button id="next" class="btn btn-quiet" type="button">Next</button>
+      </span>
+    </div>
+  </main>
+
+  <!-- Add asset -->
+  <dialog id="asset-dialog" aria-labelledby="asset-dialog-title">
+    <form id="asset-form" method="dialog" novalidate>
+      <div class="dlg-head"><h2 id="asset-dialog-title">Add asset</h2>
+        <button class="btn btn-quiet" type="button" data-close>Close</button></div>
+      <div class="dlg-body">
+        <div id="asset-error" class="alert" role="alert" hidden></div>
+        <label class="field"><span>Serial number</span><input id="f-serial" required maxlength="100" autocomplete="off"></label>
+        <div class="grid-2">
+          <label class="field"><span>Type</span><select id="f-type"></select></label>
+          <label class="field"><span>Status</span><select id="f-status"></select></label>
+        </div>
+        <div class="grid-2">
+          <label class="field"><span>Model</span><input id="f-model" maxlength="100"></label>
+          <label class="field"><span>Location</span><input id="f-location" maxlength="200" placeholder="e.g. MMIA T2 check-in desk 14"></label>
+        </div>
+        <label class="field"><span>Notes</span><textarea id="f-notes" maxlength="1000"></textarea></label>
+      </div>
+      <div class="dlg-foot">
+        <button class="btn btn-quiet" type="button" data-close>Cancel</button>
+        <button id="asset-save" class="btn btn-sign" type="submit">Save asset</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Asset detail + maintenance -->
+  <dialog id="detail-dialog" aria-labelledby="detail-title">
+    <div class="dlg-head"><h2 id="detail-title"></h2>
+      <button class="btn btn-quiet" type="button" data-close>Close</button></div>
+    <div class="dlg-body">
+      <div id="detail-error" class="alert" role="alert" hidden></div>
+      <dl id="detail-facts" class="facts"></dl>
+
+      <div id="status-row" class="grid-2" hidden>
+        <label class="field"><span>Change status</span><select id="d-status"></select></label>
+        <div class="field"><span>&nbsp;</span><button id="d-status-save" class="btn" type="button">Update status</button></div>
+      </div>
+
+      <h3 class="section-title">Maintenance history</h3>
+      <ul id="log-list" class="log-list"></ul>
+
+      <form id="log-form" hidden novalidate>
+        <h3 class="section-title">Log maintenance</h3>
+        <label class="field"><span>What was done</span><textarea id="l-desc" required maxlength="2000"></textarea></label>
+        <label class="field"><span>Part replaced (optional)</span><input id="l-part" maxlength="200"></label>
+        <p><button class="btn btn-sign" type="submit">Save log</button></p>
+      </form>
+    </div>
+    <div class="dlg-foot">
+      <button id="decommission" class="btn btn-danger" type="button" hidden>Decommission asset</button>
+    </div>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" hidden></div>
+
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>

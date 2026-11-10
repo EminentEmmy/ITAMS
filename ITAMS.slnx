@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="ITAMS.Api/ITAMS.Api.csproj" />
+  <Project Path="ITAMS.Domain/ITAMS.Domain.csproj" />
+  <Project Path="ITAMS.Infrastructure/ITAMS.Infrastructure.csproj" />
+</Solution>

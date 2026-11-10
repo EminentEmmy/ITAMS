@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in to ITAMS</title>
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <div class="login">
+    <section class="login-sign" aria-hidden="false">
+      <div class="brand"><span class="mark" aria-hidden="true"></span><span class="brand-name">ITAMS</span></div>
+      <h1>Every check-in desk, printer and scale, accounted for.</h1>
+      <p>IT asset management for airport and cargo operations.</p>
+    </section>
+
+    <section class="login-form">
+      <form id="login-form" autocomplete="on" novalidate>
+        <h2>Sign in</h2>
+        <div id="error" class="alert" role="alert" hidden></div>
+
+        <label class="field">
+          <span>Company code</span>
+          <input id="tenant" name="tenant" type="text" autocomplete="organization" autocapitalize="none" spellcheck="false" required maxlength="50">
+        </label>
+        <label class="field">
+          <span>Work email</span>
+          <input id="email" name="email" type="email" autocomplete="username" required maxlength="200">
+        </label>
+        <label class="field">
+          <span>Password</span>
+          <input id="password" name="password" type="password" autocomplete="current-password" required maxlength="200">
+        </label>
+
+        <button id="submit" class="btn btn-sign" type="submit">Sign in</button>
+      </form>
+    </section>
+  </div>
+
+  <script type="module" src="/js/login.js"></script>
+</body>
+</html>

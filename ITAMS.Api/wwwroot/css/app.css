@@ -1,0 +1,121 @@
+/* ITAMS: airport wayfinding signage. Navy ink, signage yellow, solid status blocks. No external fonts (strict CSP). */
+:root {
+  --ink: #12203a;
+  --ink-soft: #3b4a66;
+  --paper: #eef1f5;
+  --card: #ffffff;
+  --line: #ccd4e0;
+  --sign: #ffc400;
+  --sign-deep: #e0a800;
+  --danger: #b3261e;
+  --ok: #1f7a4d;
+  --warn: #b85400;
+  --stock: #dbe3ef;
+  --retired: #4a4f57;
+
+  --font-sign: "Bahnschrift", "DIN Alternate", "Franklin Gothic Medium", "Arial Narrow", system-ui, sans-serif;
+  --font-body: system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-data: ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { font-size: 16px; }
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--font-body); line-height: 1.5; }
+h1, h2, h3 { font-family: var(--font-sign); font-weight: 600; line-height: 1.15; margin: 0; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+
+/* ---------- signage header ---------- */
+.signage { background: var(--sign); color: var(--ink); display: flex; flex-wrap: wrap; align-items: center;
+  justify-content: space-between; gap: .75rem 1.5rem; padding: .75rem clamp(1rem, 4vw, 2.5rem); border-bottom: 6px solid var(--ink); }
+.brand { display: flex; align-items: center; gap: .75rem; }
+.mark { width: 2.25rem; height: 2.25rem; background: var(--ink); position: relative; flex: none; }
+.mark::after { content: ""; position: absolute; left: .55rem; top: .6rem; width: 1.1rem; height: 1.1rem;
+  border-top: 4px solid var(--sign); border-right: 4px solid var(--sign); transform: rotate(45deg); }
+.brand-name { font-family: var(--font-sign); font-size: 1.75rem; font-weight: 700; letter-spacing: .02em; }
+.tenant { font-family: var(--font-sign); font-size: 1.1rem; padding-left: .75rem; border-left: 3px solid var(--ink); }
+.who { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+.role { background: var(--ink); color: var(--sign); font-family: var(--font-sign); font-size: .9rem; padding: .1rem .55rem; }
+
+/* ---------- layout ---------- */
+main { max-width: 1180px; margin: 0 auto; padding: 1.5rem clamp(1rem, 4vw, 2.5rem) 4rem; }
+.page-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+.page-head h1 { font-size: 2rem; }
+.toolbar { display: grid; grid-template-columns: minmax(12rem, 2fr) repeat(2, minmax(9rem, 1fr)); gap: .75rem; margin-bottom: 1rem; }
+.field { display: flex; flex-direction: column; gap: .25rem; }
+.field > span { font-size: .875rem; font-weight: 600; color: var(--ink-soft); }
+input, select, textarea { background: var(--card); border: 2px solid var(--line); border-radius: 4px; padding: .5rem .65rem; width: 100%; min-height: 2.5rem; }
+input:hover, select:hover, textarea:hover { border-color: var(--ink-soft); }
+textarea { resize: vertical; min-height: 5rem; }
+
+/* ---------- buttons ---------- */
+.btn { border: 2px solid var(--ink); background: var(--ink); color: #fff; border-radius: 4px; padding: .5rem 1rem; min-height: 2.5rem;
+  font-family: var(--font-sign); font-size: 1rem; font-weight: 600; cursor: pointer; }
+.btn:hover { background: #1d3157; }
+.btn:disabled { opacity: .55; cursor: not-allowed; }
+.btn-sign { background: var(--sign); color: var(--ink); }
+.btn-sign:hover { background: var(--sign-deep); }
+.btn-quiet { background: transparent; color: var(--ink); }
+.btn-quiet:hover { background: rgba(18, 32, 58, .1); }
+.btn-danger { background: var(--danger); border-color: var(--danger); }
+.btn-danger:hover { background: #8f1f19; }
+
+/* ---------- asset table ---------- */
+.table-wrap { background: var(--card); border: 2px solid var(--ink); overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; min-width: 44rem; }
+th { text-align: left; font-family: var(--font-sign); font-weight: 600; background: var(--ink); color: #fff; padding: .6rem .85rem; white-space: nowrap; }
+td { padding: .6rem .85rem; border-top: 1px solid var(--line); vertical-align: middle; }
+tbody tr:hover { background: #f6f8fb; }
+.serial { font-family: var(--font-data); font-weight: 600; font-size: .95rem; background: none; border: 0; padding: 0; cursor: pointer;
+  color: var(--ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 2px; text-decoration-color: var(--sign-deep); }
+.serial:hover { text-decoration-color: var(--ink); }
+.muted { color: var(--ink-soft); }
+
+/* status blocks, like gate signs */
+.status { display: inline-block; font-family: var(--font-sign); font-weight: 600; font-size: .9rem; padding: .1rem .6rem; min-width: 6.5rem; text-align: center; border-radius: 2px; }
+.status-InStock { background: var(--stock); color: var(--ink); }
+.status-Deployed { background: var(--ok); color: #fff; }
+.status-UnderRepair { background: var(--warn); color: #fff; }
+.status-Decommissioned { background: var(--retired); color: #fff; }
+
+.pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; margin-top: 1rem; }
+.empty { padding: 2.5rem 1rem; text-align: center; }
+.empty h2 { font-size: 1.35rem; margin-bottom: .35rem; }
+
+/* ---------- dialogs ---------- */
+dialog { border: 3px solid var(--ink); border-radius: 0; padding: 0; width: min(40rem, calc(100vw - 2rem)); max-height: calc(100vh - 2rem); background: var(--card); color: var(--ink); }
+dialog::backdrop { background: rgba(18, 32, 58, .6); }
+.dlg-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; background: var(--sign); padding: .75rem 1.25rem; border-bottom: 3px solid var(--ink); }
+.dlg-head h2 { font-size: 1.35rem; }
+.dlg-body { padding: 1.25rem; display: grid; gap: 1rem; }
+.dlg-foot { display: flex; flex-wrap: wrap; gap: .75rem; justify-content: flex-end; padding: 0 1.25rem 1.25rem; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.facts { display: grid; grid-template-columns: auto 1fr; gap: .25rem 1rem; margin: 0; }
+.facts dt { font-weight: 600; color: var(--ink-soft); }
+.facts dd { margin: 0; overflow-wrap: anywhere; }
+.log-list { list-style: none; margin: 0; padding: 0; display: grid; gap: .5rem; }
+.log-list li { border-left: 4px solid var(--sign-deep); padding: .25rem .75rem; background: #f6f8fb; }
+.log-meta { font-size: .875rem; color: var(--ink-soft); }
+.section-title { font-size: 1.1rem; border-bottom: 2px solid var(--ink); padding-bottom: .25rem; }
+
+.alert { border-left: 5px solid var(--danger); background: #fdeceb; padding: .6rem .85rem; }
+.alert[hidden] { display: none; }
+.toast { position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: .6rem 1.1rem; border-left: 6px solid var(--sign); z-index: 10; }
+.toast[hidden] { display: none; }
+
+/* ---------- login ---------- */
+.login { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.login-sign { background: var(--sign); border-right: 8px solid var(--ink); padding: clamp(1.5rem, 5vw, 4rem); display: flex; flex-direction: column; justify-content: space-between; gap: 2rem; }
+.login-sign .brand-name { font-size: 2.25rem; }
+.login-sign h1 { font-size: clamp(2rem, 4.5vw, 3.5rem); max-width: 14ch; }
+.login-form { display: grid; place-content: center; padding: clamp(1.5rem, 5vw, 4rem); }
+.login-form form { display: grid; gap: 1rem; width: min(24rem, 100%); }
+.login-form h2 { font-size: 1.5rem; }
+
+@media (max-width: 760px) {
+  .toolbar { grid-template-columns: 1fr; }
+  .grid-2 { grid-template-columns: 1fr; }
+  .login { grid-template-columns: 1fr; }
+  .login-sign { border-right: 0; border-bottom: 8px solid var(--ink); }
+}
