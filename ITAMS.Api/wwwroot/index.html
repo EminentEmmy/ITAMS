@@ -6,7 +6,7 @@
   <title>ITAMS: Assets</title>
   <link rel="stylesheet" href="/css/app.css">
 </head>
-<body>
+<body class="pending">
   <header class="signage">
     <div class="brand">
       <span class="mark" aria-hidden="true"></span>
@@ -16,33 +16,79 @@
     <div class="who">
       <span id="user-name"></span>
       <span id="user-role" class="role"></span>
+      <a class="btn btn-quiet" href="/change-password.html">Change password</a>
       <button id="logout" class="btn btn-quiet" type="button">Sign out</button>
     </div>
   </header>
 
   <main>
-    <div class="page-head">
-      <h1>Assets</h1>
-      <button id="add-asset" class="btn btn-sign" type="button" hidden>Add asset</button>
+    <div id="tabs" class="tabs" role="tablist" aria-label="Sections" hidden>
+      <button id="tab-assets" class="tab" type="button" role="tab" aria-selected="true" aria-controls="panel-assets">Assets</button>
+      <button id="tab-staff" class="tab" type="button" role="tab" aria-selected="false" aria-controls="panel-staff" hidden>Staff</button>
+      <button id="tab-audit" class="tab" type="button" role="tab" aria-selected="false" aria-controls="panel-audit" hidden>Audit trail</button>
     </div>
 
-    <div class="toolbar">
-      <label class="field"><span>Search serial, model or location</span><input id="search" type="search" maxlength="100"></label>
-      <label class="field"><span>Status</span>
-        <select id="filter-status"><option value="">All statuses</option></select></label>
-      <label class="field"><span>Type</span>
-        <select id="filter-type"><option value="">All types</option></select></label>
-    </div>
+    <!-- ================= Assets ================= -->
+    <section id="panel-assets" role="tabpanel" aria-labelledby="tab-assets">
+      <div class="page-head">
+        <h1>Assets</h1>
+        <button id="add-asset" class="btn btn-sign" type="button" hidden>Add asset</button>
+      </div>
 
-    <div id="list-error" class="alert" role="alert" hidden></div>
-    <div id="table-host"></div>
-    <div class="pager">
-      <span id="range" class="muted" aria-live="polite"></span>
-      <span>
-        <button id="prev" class="btn btn-quiet" type="button">Previous</button>
-        <button id="next" class="btn btn-quiet" type="button">Next</button>
-      </span>
-    </div>
+      <div class="toolbar">
+        <label class="field"><span>Search serial, model or location</span><input id="search" type="search" maxlength="100"></label>
+        <label class="field"><span>Status</span>
+          <select id="filter-status"><option value="">All statuses</option></select></label>
+        <label class="field"><span>Type</span>
+          <select id="filter-type"><option value="">All types</option></select></label>
+      </div>
+
+      <div id="list-error" class="alert" role="alert" hidden></div>
+      <div id="table-host"></div>
+      <div class="pager">
+        <span id="range" class="muted" aria-live="polite"></span>
+        <span>
+          <button id="prev" class="btn btn-quiet" type="button">Previous</button>
+          <button id="next" class="btn btn-quiet" type="button">Next</button>
+        </span>
+      </div>
+    </section>
+
+    <!-- ================= Staff (administrators) ================= -->
+    <section id="panel-staff" role="tabpanel" aria-labelledby="tab-staff" hidden>
+      <div class="page-head">
+        <h1>Staff</h1>
+        <button id="add-user" class="btn btn-sign" type="button">Add person</button>
+      </div>
+      <p class="muted">People who can sign in to your organization. New and reset accounts get a temporary password that must be changed at first sign-in.</p>
+      <div id="staff-error" class="alert" role="alert" hidden></div>
+      <div id="staff-host"></div>
+    </section>
+
+    <!-- ================= Audit trail ================= -->
+    <section id="panel-audit" role="tabpanel" aria-labelledby="tab-audit" hidden>
+      <div class="page-head">
+        <h1>Audit trail</h1>
+        <label class="field audit-filter"><span>Show</span>
+          <select id="audit-category">
+            <option value="">Everything</option>
+            <option value="security">Sign-ins and security</option>
+            <option value="assets">Assets and maintenance</option>
+            <option value="staff">Staff changes</option>
+            <option value="platform">Platform team actions</option>
+          </select></label>
+      </div>
+      <p class="muted">A permanent record of who did what and when. Entries cannot be edited or deleted by anyone.</p>
+      <div id="audit-error" class="alert" role="alert" hidden></div>
+      <div id="audit-host"></div>
+      <div class="pager">
+        <span id="audit-range" class="muted" aria-live="polite"></span>
+        <span>
+          <button id="audit-prev" class="btn btn-quiet" type="button">Previous</button>
+          <button id="audit-next" class="btn btn-quiet" type="button">Next</button>
+        </span>
+      </div>
+    </section>
   </main>
 
   <!-- Add asset -->
@@ -95,6 +141,42 @@
     </div>
     <div class="dlg-foot">
       <button id="decommission" class="btn btn-danger" type="button" hidden>Decommission asset</button>
+    </div>
+  </dialog>
+
+  <!-- Add person -->
+  <dialog id="user-dialog" aria-labelledby="user-dialog-title">
+    <form id="user-form" method="dialog" novalidate>
+      <div class="dlg-head"><h2 id="user-dialog-title">Add person</h2>
+        <button class="btn btn-quiet" type="button" data-close>Close</button></div>
+      <div class="dlg-body">
+        <div id="user-error" class="alert" role="alert" hidden></div>
+        <label class="field"><span>Full name</span><input id="u-name" required maxlength="200"></label>
+        <label class="field"><span>Work email</span><input id="u-email" type="email" required maxlength="200"></label>
+        <label class="field"><span>Role</span><select id="u-role"></select></label>
+        <p id="u-role-help" class="muted"></p>
+      </div>
+      <div class="dlg-foot">
+        <button class="btn btn-quiet" type="button" data-close>Cancel</button>
+        <button id="user-save" class="btn btn-sign" type="submit">Create account</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Temporary credentials, shown once -->
+  <dialog id="cred-dialog" aria-labelledby="cred-title">
+    <div class="dlg-head"><h2 id="cred-title"></h2>
+      <button class="btn btn-quiet" type="button" data-close>Close</button></div>
+    <div class="dlg-body">
+      <div class="cred">
+        <div><span class="muted">Sign-in email</span><div id="cred-email" class="cred-line"></div></div>
+        <div><span class="muted">Temporary password</span><div id="cred-pass" class="cred-pass"></div></div>
+      </div>
+      <p>This password is shown only once and is not stored anywhere readable. Send it over a private channel.
+        The person must choose a new password the first time they sign in.</p>
+    </div>
+    <div class="dlg-foot">
+      <button id="cred-copy" class="btn btn-sign" type="button">Copy password</button>
     </div>
   </dialog>
 

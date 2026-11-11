@@ -20,6 +20,8 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 [hidden] { display: none !important; }
+/* Shell stays invisible until the script has verified the session and role. */
+body.pending > header, body.pending > main { visibility: hidden; }
 html { font-size: 16px; }
 body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--font-body); line-height: 1.5; }
 h1, h2, h3 { font-family: var(--font-sign); font-weight: 600; line-height: 1.15; margin: 0; }
@@ -101,6 +103,7 @@ dialog::backdrop { background: rgba(18, 32, 58, .6); }
 
 .alert { border-left: 5px solid var(--danger); background: #fdeceb; padding: .6rem .85rem; }
 .alert[hidden] { display: none; }
+.notice { border-left: 5px solid var(--ok); background: #e8f5ee; padding: .6rem .85rem; }
 .toast { position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: .6rem 1.1rem; border-left: 6px solid var(--sign); z-index: 10; }
 .toast[hidden] { display: none; }
 
@@ -119,3 +122,48 @@ dialog::backdrop { background: rgba(18, 32, 58, .6); }
   .login { grid-template-columns: 1fr; }
   .login-sign { border-right: 0; border-bottom: 8px solid var(--ink); }
 }
+
+/* ================= Platform console ================= */
+/* Inverted signage: navy bar with yellow type, so the owner always knows they are not inside a customer account. */
+.signage-platform { background: var(--ink); color: var(--sign); border-bottom-color: var(--sign); }
+.signage-platform .tenant { border-left-color: var(--sign); }
+.signage-platform .role { background: var(--sign); color: var(--ink); }
+.signage-platform .mark { background: var(--sign); }
+.signage-platform .mark::after { border-color: var(--ink); }
+.signage-platform .btn-quiet { color: var(--sign); border-color: var(--sign); }
+.signage-platform .btn-quiet:hover { background: rgba(255, 196, 0, .15); }
+
+.ledger { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); margin: 0 0 1.25rem; background: var(--card); border: 2px solid var(--ink); }
+.ledger-item { display: flex; flex-direction: column-reverse; justify-content: flex-end; padding: .75rem 1rem; border-right: 1px solid var(--line); }
+.ledger-item:last-child { border-right: 0; }
+.ledger-item dd { margin: 0; font-family: var(--font-sign); font-size: 1.75rem; font-weight: 600; line-height: 1.1; }
+.ledger-item dt { color: var(--ink-soft); font-size: .875rem; }
+
+.tabs { display: flex; flex-wrap: wrap; gap: .25rem; border-bottom: 3px solid var(--ink); margin: 1rem 0; }
+.tab { font-family: var(--font-sign); font-size: 1.05rem; font-weight: 600; background: transparent; border: 2px solid transparent; border-bottom: 0; padding: .5rem 1.25rem; cursor: pointer; }
+.tab:hover { background: rgba(18, 32, 58, .08); }
+.tab[aria-selected="true"] { background: var(--ink); color: #fff; }
+
+.tool-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: .75rem; }
+.tool-row p { margin: 0; }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; }
+.btn-small { min-height: 2rem; padding: .15rem .65rem; font-size: .9rem; }
+.code { font-family: var(--font-data); font-size: .875rem; }
+.link { background: none; border: 0; padding: 0; cursor: pointer; font-family: var(--font-sign); font-size: 1.1rem; font-weight: 600; color: var(--ink);
+  text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 2px; text-decoration-color: var(--sign-deep); }
+.link:hover { text-decoration-color: var(--ink); }
+
+.status-Active { background: var(--ok); color: #fff; }
+.status-Suspended, .status-Disabled { background: var(--retired); color: #fff; }
+.status-Locked { background: var(--danger); color: #fff; }
+.status-Invited { background: var(--stock); color: var(--ink); }
+
+.cred { display: grid; gap: .75rem; padding: 1rem; background: #f6f8fb; border: 2px dashed var(--ink); }
+.cred-line { font-weight: 600; overflow-wrap: anywhere; }
+.cred-pass { font-family: var(--font-data); font-size: 1.5rem; font-weight: 700; letter-spacing: .05em; overflow-wrap: anywhere; user-select: all; }
+
+/* ================= Staff and audit screens ================= */
+a.btn { display: inline-flex; align-items: center; text-decoration: none; }
+.role-select { width: auto; min-height: 2rem; padding: .15rem .4rem; }
+.audit-filter { min-width: 14rem; }
+td.detail { max-width: 22rem; overflow-wrap: anywhere; color: var(--ink-soft); font-size: .9rem; }

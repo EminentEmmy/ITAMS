@@ -1,4 +1,6 @@
 import { api, el, label, fmtDate, ApiError } from './api.js';
+import { initStaff, loadStaff } from './staff.js';
+import { initAudit, loadAudit } from './audit.js';
 
 const STATUSES = ['InStock', 'Deployed', 'UnderRepair', 'Decommissioned'];
 const TYPES = ['SystemUnit', 'BoardingPrinter', 'CargoScaleInterface', 'Monitor', 'Other'];
@@ -213,11 +215,38 @@ async function decommission() {
   } catch (err) { showError($('detail-error'), err); }
 }
 
+// ---------------------------------------------------------------- tabs (Assets for everyone, Staff for admins, Audit for admins and auditors)
+const TABS = ['assets', 'staff', 'audit'];
+
+function selectTab(name) {
+  for (const t of TABS) {
+    $(`tab-${t}`).setAttribute('aria-selected', String(t === name));
+    $(`panel-${t}`).hidden = t !== name;
+  }
+  if (name === 'staff') loadStaff();
+  if (name === 'audit') loadAudit();
+}
+
+function setupTabs() {
+  const visible = { assets: true, staff: isAdmin(), audit: isAdmin() || state.me.role === 'Auditor' };
+  $('tabs').hidden = !(visible.staff || visible.audit);
+  for (const [name, show] of Object.entries(visible)) {
+    $(`tab-${name}`).hidden = !show;
+    $(`tab-${name}`).addEventListener('click', () => selectTab(name));
+  }
+  if (visible.staff) initStaff(state.me);
+  if (visible.audit) initAudit();
+}
+
 // ---------------------------------------------------------------- start
 async function start() {
   try {
     state.me = await api('/api/auth/me');
   } catch { return; }   // api() already redirected to the sign-in page
+
+  if (state.me.mustChangePassword) { location.replace('/change-password.html'); return; }
+  if (state.me.role === 'SuperAdmin') { location.replace('/platform.html'); return; }
+  document.body.classList.remove('pending');
 
   $('tenant-name').textContent = state.me.tenantId.toUpperCase();
   $('user-name').textContent = state.me.fullName;
@@ -244,6 +273,7 @@ async function start() {
   $('prev').addEventListener('click', () => { state.page--; loadAssets(); });
   $('next').addEventListener('click', () => { state.page++; loadAssets(); });
 
+  setupTabs();
   watchInactivity();
   await loadAssets();
 }

@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ITAMS Platform console</title>
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body class="pending">
+  <header class="signage signage-platform">
+    <div class="brand">
+      <span class="mark" aria-hidden="true"></span>
+      <span class="brand-name">ITAMS</span>
+      <span class="tenant">Platform console</span>
+    </div>
+    <div class="who">
+      <span id="user-name"></span>
+      <span class="role">Platform owner</span>
+      <a class="btn btn-quiet" href="/change-password.html">Change password</a>
+      <button id="logout" class="btn btn-quiet" type="button">Sign out</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- ================= Organizations ================= -->
+    <section id="view-list">
+      <div class="page-head">
+        <h1>Organizations</h1>
+        <button id="new-org" class="btn btn-sign" type="button">New organization</button>
+      </div>
+
+      <dl id="ledger" class="ledger"></dl>
+      <div id="list-error" class="alert" role="alert" hidden></div>
+      <div id="orgs-host"></div>
+    </section>
+
+    <!-- ================= One organization ================= -->
+    <section id="view-detail" hidden>
+      <p><button id="back" class="btn btn-quiet" type="button">Back to organizations</button></p>
+
+      <div class="page-head">
+        <div>
+          <h1 id="org-name"></h1>
+          <p id="org-meta" class="muted"></p>
+        </div>
+        <div class="actions">
+          <span id="org-status"></span>
+          <button id="org-toggle" class="btn" type="button"></button>
+        </div>
+      </div>
+
+      <div id="detail-error" class="alert" role="alert" hidden></div>
+
+      <div class="tabs" role="tablist" aria-label="Organization sections">
+        <button id="tab-users" class="tab" type="button" role="tab" aria-selected="true" aria-controls="panel-users">Users</button>
+        <button id="tab-assets" class="tab" type="button" role="tab" aria-selected="false" aria-controls="panel-assets">Assets</button>
+        <button id="tab-activity" class="tab" type="button" role="tab" aria-selected="false" aria-controls="panel-activity">Activity</button>
+      </div>
+
+      <div id="panel-users" role="tabpanel" aria-labelledby="tab-users">
+        <div class="tool-row">
+          <p class="muted">People who can sign in to this organization.</p>
+          <button id="add-user" class="btn btn-sign" type="button">Add user</button>
+        </div>
+        <div id="users-host"></div>
+      </div>
+
+      <div id="panel-assets" role="tabpanel" aria-labelledby="tab-assets" hidden>
+        <p class="muted">Read-only view. Only the organization's own staff can change these records.</p>
+        <div class="toolbar">
+          <label class="field"><span>Search serial, model or location</span><input id="a-search" type="search" maxlength="100"></label>
+          <label class="field"><span>Status</span><select id="a-status"><option value="">All statuses</option></select></label>
+          <label class="field"><span>Type</span><select id="a-type"><option value="">All types</option></select></label>
+        </div>
+        <div id="assets-error" class="alert" role="alert" hidden></div>
+        <div id="assets-host"></div>
+        <div class="pager">
+          <span id="assets-range" class="muted" aria-live="polite"></span>
+          <span>
+            <button id="assets-prev" class="btn btn-quiet" type="button">Previous</button>
+            <button id="assets-next" class="btn btn-quiet" type="button">Next</button>
+          </span>
+        </div>
+      </div>
+
+      <div id="panel-activity" role="tabpanel" aria-labelledby="tab-activity" hidden>
+        <p class="muted">Sign-ins, changes and platform actions for this organization. Entries cannot be edited or deleted.</p>
+        <div id="activity-error" class="alert" role="alert" hidden></div>
+        <div id="activity-host"></div>
+        <div class="pager">
+          <span id="activity-range" class="muted" aria-live="polite"></span>
+          <span>
+            <button id="activity-prev" class="btn btn-quiet" type="button">Previous</button>
+            <button id="activity-next" class="btn btn-quiet" type="button">Next</button>
+          </span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- New organization -->
+  <dialog id="org-dialog" aria-labelledby="org-dialog-title">
+    <form id="org-form" method="dialog" novalidate>
+      <div class="dlg-head"><h2 id="org-dialog-title">New organization</h2>
+        <button class="btn btn-quiet" type="button" data-close>Close</button></div>
+      <div class="dlg-body">
+        <div id="org-error" class="alert" role="alert" hidden></div>
+        <div class="grid-2">
+          <label class="field"><span>Organization name</span><input id="o-name" required maxlength="200" placeholder="e.g. NAHCO Aviance"></label>
+          <label class="field"><span>Company code (used to sign in)</span><input id="o-code" required maxlength="50" autocapitalize="none" spellcheck="false" placeholder="e.g. nahco"></label>
+        </div>
+        <p class="muted">The first administrator gets a temporary password. They choose their own at first sign-in.</p>
+        <div class="grid-2">
+          <label class="field"><span>Administrator name</span><input id="o-admin-name" required maxlength="200"></label>
+          <label class="field"><span>Administrator email</span><input id="o-admin-email" type="email" required maxlength="200"></label>
+        </div>
+      </div>
+      <div class="dlg-foot">
+        <button class="btn btn-quiet" type="button" data-close>Cancel</button>
+        <button id="org-save" class="btn btn-sign" type="submit">Create organization</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Add user -->
+  <dialog id="user-dialog" aria-labelledby="user-dialog-title">
+    <form id="user-form" method="dialog" novalidate>
+      <div class="dlg-head"><h2 id="user-dialog-title">Add user</h2>
+        <button class="btn btn-quiet" type="button" data-close>Close</button></div>
+      <div class="dlg-body">
+        <div id="user-error" class="alert" role="alert" hidden></div>
+        <label class="field"><span>Full name</span><input id="u-name" required maxlength="200"></label>
+        <label class="field"><span>Work email</span><input id="u-email" type="email" required maxlength="200"></label>
+        <label class="field"><span>Role</span><select id="u-role"></select></label>
+        <p id="u-role-help" class="muted"></p>
+      </div>
+      <div class="dlg-foot">
+        <button class="btn btn-quiet" type="button" data-close>Cancel</button>
+        <button id="user-save" class="btn btn-sign" type="submit">Create user</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Temporary credentials, shown once -->
+  <dialog id="cred-dialog" aria-labelledby="cred-title">
+    <div class="dlg-head"><h2 id="cred-title"></h2>
+      <button class="btn btn-quiet" type="button" data-close>Close</button></div>
+    <div class="dlg-body">
+      <div class="cred">
+        <div><span class="muted">Sign-in email</span><div id="cred-email" class="cred-line"></div></div>
+        <div><span class="muted">Temporary password</span><div id="cred-pass" class="cred-pass"></div></div>
+      </div>
+      <p>This password is shown only once and is not stored anywhere readable. Send it over a private channel.
+        The user must choose a new password the first time they sign in.</p>
+    </div>
+    <div class="dlg-foot">
+      <button id="cred-copy" class="btn btn-sign" type="button">Copy password</button>
+    </div>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" hidden></div>
+
+  <script type="module" src="/js/platform.js"></script>
+</body>
+</html>

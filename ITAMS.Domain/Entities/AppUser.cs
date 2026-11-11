@@ -12,6 +12,9 @@ public class AppUser
     public UserRole Role { get; set; }
     public bool IsActive { get; set; } = true;
 
+    /// <summary>True for temporary passwords (new or reset accounts). Every API call except /api/auth/* is blocked until changed.</summary>
+    public bool MustChangePassword { get; set; }
+
     // Brute-force protection
     public int FailedLoginCount { get; set; }
     public DateTime? LockoutEndUtc { get; set; }

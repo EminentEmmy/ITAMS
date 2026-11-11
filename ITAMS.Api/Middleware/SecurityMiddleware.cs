@@ -40,4 +40,23 @@ public static class SecurityMiddleware
 
             await next();
         });
+
+    /// <summary>
+    /// A user holding a temporary password (claim mcp=1) can only reach /api/auth/* (to change it, sign out or refresh).
+    /// Everything else answers 403 until the password has been changed.
+    /// </summary>
+    public static IApplicationBuilder UsePasswordChangeGate(this IApplicationBuilder app) =>
+        app.Use(async (ctx, next) =>
+        {
+            if (ctx.User.FindFirst("mcp")?.Value == "1"
+                && ctx.Request.Path.StartsWithSegments("/api")
+                && !ctx.Request.Path.StartsWithSegments("/api/auth"))
+            {
+                ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
+                await ctx.Response.WriteAsJsonAsync(new { error = "You must change your temporary password first.", code = "password_change_required" });
+                return;
+            }
+
+            await next();
+        });
 }

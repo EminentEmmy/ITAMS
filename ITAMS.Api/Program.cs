@@ -5,6 +5,7 @@ using System.Threading.RateLimiting;
 using ITAMS.Api.Auth;
 using ITAMS.Api.Middleware;
 using ITAMS.Api.Services;
+using ITAMS.Domain.Common;
 using ITAMS.Domain.Abstractions;
 using ITAMS.Infrastructure.Data;
 using ITAMS.Infrastructure.Security;
@@ -78,7 +79,9 @@ builder.Services
 
 // Secure by default: every endpoint requires a signed-in user unless it says [AllowAnonymous].
 builder.Services.AddAuthorizationBuilder()
-    .SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
+    .SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build())
+    // Platform owner: must be a SuperAdmin AND belong to the reserved "platform" tenant.
+    .AddPolicy("PlatformOwner", p => p.RequireRole("SuperAdmin").RequireClaim("tid", PlatformConstants.TenantId));
 
 // ---------------------------------------------------------------- rate limiting
 builder.Services.AddRateLimiter(o =>
@@ -111,6 +114,19 @@ if (app.Environment.IsDevelopment())
         await DbSeeder.SeedAsync(db, scope.ServiceProvider.GetRequiredService<IPasswordHasher>(), seedPassword);
 }
 
+// ---------------------------------------------------------------- platform owner bootstrap (any environment)
+// Creates the owner account once, only if no SuperAdmin exists yet. The password is temporary (must be changed at first sign-in).
+var ownerEmail = app.Configuration["Owner:Email"];
+var ownerPassword = app.Configuration["Owner:Password"];
+if (!string.IsNullOrWhiteSpace(ownerEmail) && !string.IsNullOrWhiteSpace(ownerPassword))
+{
+    using var scope = app.Services.CreateScope();
+    await DbSeeder.SeedPlatformOwnerAsync(
+        scope.ServiceProvider.GetRequiredService<ApplicationDbContext>(),
+        scope.ServiceProvider.GetRequiredService<IPasswordHasher>(),
+        ownerEmail, app.Configuration["Owner:FullName"] ?? "Platform Owner", ownerPassword);
+}
+
 // ---------------------------------------------------------------- pipeline (order matters)
 app.UseExceptionHandler();
 if (!app.Environment.IsDevelopment()) app.UseHsts();
@@ -118,10 +134,15 @@ app.UseHttpsRedirection();
 app.UseSecurityHeaders();
 
 app.UseDefaultFiles();   // "/" -> /index.html
-app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    // "no-cache" = the browser may keep a copy but must re-check it every time (cheap ETag check), so updates are never missed.
+    OnPrepareResponse = ctx => ctx.Context.Response.Headers.CacheControl = "no-cache"
+});
 
 app.UseCsrfHeaderCheck();
 app.UseAuthentication();
+app.UsePasswordChangeGate();   // temporary-password users can only reach /api/auth/*
 app.UseRateLimiter();    // after authentication so the limiter can see the user
 app.UseAuthorization();
 

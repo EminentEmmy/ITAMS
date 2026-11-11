@@ -1,5 +1,5 @@
 // Small fetch wrapper. Cookies carry the tokens (HttpOnly, so JS never sees them).
-// The X-ITAMS-Request header is the CSRF guard the server requires on every POST/PUT/DELETE.
+// The X-ITAMS-Request header is the CSRF guard the server requires on every POST/PUT/PATCH/DELETE.
 
 export class ApiError extends Error {
   constructor(status, message) { super(message); this.status = status; }
@@ -30,13 +30,12 @@ function refreshSession() {
 async function readError(res) {
   try {
     const data = await res.json();
-    if (data?.error) return data.error;
-    if (data?.errors) return Object.values(data.errors).flat()[0];
-    if (data?.title) return data.title;
+    const message = data?.error ?? (data?.errors ? Object.values(data.errors).flat()[0] : null) ?? data?.title;
+    if (message) return { message, code: data?.code };
   } catch { /* not JSON */ }
-  if (res.status === 403) return 'Your role does not allow this action.';
-  if (res.status === 429) return 'Too many requests. Wait a minute and try again.';
-  return 'Something went wrong. Try again.';
+  if (res.status === 403) return { message: 'Your role does not allow this action.' };
+  if (res.status === 429) return { message: 'Too many requests. Wait a minute and try again.' };
+  return { message: 'Something went wrong. Try again.' };
 }
 
 export async function api(path, { method = 'GET', body } = {}) {
@@ -51,8 +50,20 @@ export async function api(path, { method = 'GET', body } = {}) {
     }
   }
 
-  if (!res.ok) throw new ApiError(res.status, await readError(res));
+  if (!res.ok) {
+    const { message, code } = await readError(res);
+    if (code === 'password_change_required') location.replace('/change-password.html');
+    throw new ApiError(res.status, message);
+  }
   return res.status === 204 ? null : res.json();
+}
+
+// Sign the user out after a period with no clicks, keys, scrolling or pointer movement.
+export function watchInactivity(ms, onTimeout) {
+  let timer;
+  const reset = () => { clearTimeout(timer); timer = setTimeout(onTimeout, ms); };
+  ['click', 'keydown', 'pointermove', 'scroll'].forEach(evt => addEventListener(evt, reset, { passive: true }));
+  reset();
 }
 
 // ---- tiny DOM helpers (textContent only, never innerHTML) ----
@@ -71,3 +82,4 @@ export function el(tag, props = {}, ...children) {
 
 export const label = (s) => s.replace(/([a-z])([A-Z])/g, '$1 $2');
 export const fmtDate = (iso) => new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+export const homeFor = (me) => me.mustChangePassword ? '/change-password.html' : me.role === 'SuperAdmin' ? '/platform.html' : '/index.html';

@@ -50,7 +50,7 @@ public class AuthController(
         if (user is null || !user.IsActive)
         {
             hasher.Verify(req.Password, DummyHash);
-            Audit(tenantId, Trunc(email, 100), "LOGIN_FAILED", "unknown");
+            Audit(tenantId, Trunc(email, 100)!, "LOGIN_FAILED", "unknown");
             await db.SaveChangesAsync(ct);
             return Unauthorized(new { error = GenericLoginError });
         }
@@ -169,6 +169,41 @@ public class AuthController(
         return NoContent();
     }
 
+    // ------------------------------------------------------------------ change password
+    [HttpPost("change-password")]
+    [Authorize]
+    [EnableRateLimiting("auth")]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest req, CancellationToken ct)
+    {
+        var userId = Guid.Parse(me.UserId!);
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (user is null) return Unauthorized();
+
+        if (!hasher.Verify(req.CurrentPassword, user.PasswordHash))
+        {
+            Audit(user.TenantId, user.Id.ToString(), "PASSWORD_CHANGE_FAILED", user.Id.ToString());
+            await db.SaveChangesAsync(ct);
+            return BadRequest(new { error = "The current password is incorrect." });   // 400, not 401: the session itself is fine
+        }
+
+        if (req.NewPassword == req.CurrentPassword)
+            return BadRequest(new { error = "Choose a password that is different from the current one." });
+
+        var now = DateTime.UtcNow;
+        user.PasswordHash = hasher.Hash(req.NewPassword);
+        user.MustChangePassword = false;
+
+        // Every session ends, including this one: the user must sign in again with the new password.
+        var active = await db.RefreshTokens.Where(t => t.UserId == user.Id && t.RevokedUtc == null).ToListAsync(ct);
+        foreach (var t in active) t.RevokedUtc = now;
+
+        Audit(user.TenantId, user.Id.ToString(), "PASSWORD_CHANGED", user.Id.ToString());
+        await db.SaveChangesAsync(ct);
+
+        AuthCookies.Clear(Response);
+        return NoContent();
+    }
+
     // ------------------------------------------------------------------ me
     [HttpGet("me")]
     [Authorize]
@@ -177,7 +212,8 @@ public class AuthController(
         User.FindFirstValue("name")!,
         User.FindFirstValue("email")!,
         User.FindFirstValue("role")!,
-        User.FindFirstValue("tid")!));
+        User.FindFirstValue("tid")!,
+        User.FindFirstValue("mcp") == "1"));
 
     // ------------------------------------------------------------------ helpers
     private sealed record Session(string Access, DateTime AccessExpires, string RefreshRaw, string RefreshHash, DateTime RefreshExpires);
@@ -214,7 +250,7 @@ public class AuthController(
             UserAgent = Trunc(me.UserAgent, 255)
         });
 
-    private static UserInfoDto ToDto(AppUser u) => new(u.Id.ToString(), u.FullName, u.Email, u.Role.ToString(), u.TenantId);
+    private static UserInfoDto ToDto(AppUser u) => new(u.Id.ToString(), u.FullName, u.Email, u.Role.ToString(), u.TenantId, u.MustChangePassword);
 
     private static string? Trunc(string? v, int max) => v is null || v.Length <= max ? v : v[..max];
 }

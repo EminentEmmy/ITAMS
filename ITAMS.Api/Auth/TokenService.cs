@@ -32,17 +32,20 @@ public sealed class TokenService : ITokenService
 
     public string CreateAccessToken(AppUser user)
     {
-        // Short claim names on purpose: sub = user, tid = tenant, role = RBAC.
+        // Short claim names on purpose: sub = user, tid = tenant, role = RBAC, mcp = must change password.
+        var claims = new List<Claim>
+        {
+            new("sub", user.Id.ToString()),
+            new("tid", user.TenantId),
+            new("role", user.Role.ToString()),
+            new("name", user.FullName),
+            new("email", user.Email)
+        };
+        if (user.MustChangePassword) claims.Add(new Claim("mcp", "1"));
+
         var descriptor = new SecurityTokenDescriptor
         {
-            Subject = new ClaimsIdentity(new[]
-            {
-                new Claim("sub", user.Id.ToString()),
-                new Claim("tid", user.TenantId),
-                new Claim("role", user.Role.ToString()),
-                new Claim("name", user.FullName),
-                new Claim("email", user.Email)
-            }),
+            Subject = new ClaimsIdentity(claims),
             Issuer = _options.Issuer,
             Audience = _options.Audience,
             Expires = DateTime.UtcNow.AddMinutes(_options.AccessTokenMinutes),
