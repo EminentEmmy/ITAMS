@@ -1,4 +1,8 @@
 import { api, ApiError, homeFor } from './api.js';
+import { initSlideshow, initPasswordToggle } from './auth-ui.js';
+
+initSlideshow();
+initPasswordToggle();
 
 const form = document.getElementById('pw-form');
 const errorBox = document.getElementById('error');

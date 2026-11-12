@@ -70,8 +70,16 @@ public class PlatformController(ApplicationDbContext db, IPasswordHasher hasher,
             u.LockoutEndUtc > now, u.MustChangePassword,
             lastByUser.TryGetValue(u.Id.ToString(), out var last) ? (DateTimeOffset?)last : null)).ToList();
 
-        // Opening an organization is itself recorded, so customers can see when the platform looked at their data.
-        Audit(id, "PLATFORM_TENANT_OPENED", nameof(Tenant), id);
+        // Opening an organization is always recorded. The customer sees the first view in each
+        // 30-minute window; every view stays visible to the platform owner in this console.
+        var windowStart = DateTimeOffset.UtcNow.AddMinutes(-30);
+        var shownRecently = await db.SecurityAuditLogs.IgnoreQueryFilters().AnyAsync(l =>
+            l.TenantId == id &&
+            l.Action == "PLATFORM_TENANT_OPENED" &&
+            l.TenantVisible &&
+            l.TimestampUtc > windowStart, ct);
+
+        Audit(id, "PLATFORM_TENANT_OPENED", nameof(Tenant), id, tenantVisible: !shownRecently);
         await db.SaveChangesAsync(ct);
 
         return new TenantDetailDto(summary, dtos);
@@ -290,7 +298,8 @@ public class PlatformController(ApplicationDbContext db, IPasswordHasher hasher,
         }).ToList();
     }
 
-    private void Audit(string tenantId, string action, string entityName, string entityId, object? details = null) =>
+    private void Audit(string tenantId, string action, string entityName, string entityId,
+                   object? details = null, bool tenantVisible = true) =>
         db.SecurityAuditLogs.Add(new SecurityAuditLog
         {
             TenantId = tenantId,
@@ -300,7 +309,8 @@ public class PlatformController(ApplicationDbContext db, IPasswordHasher hasher,
             EntityId = entityId,
             NewValues = details is null ? null : JsonSerializer.Serialize(details),   // never contains passwords
             IpAddress = Truncate(me.IpAddress ?? "unknown", 45)!,
-            UserAgent = Truncate(me.UserAgent, 255)
+            UserAgent = Truncate(me.UserAgent, 255),
+            TenantVisible = tenantVisible
         });
 
     private static string? Truncate(string? v, int max) => v is null || v.Length <= max ? v : v[..max];

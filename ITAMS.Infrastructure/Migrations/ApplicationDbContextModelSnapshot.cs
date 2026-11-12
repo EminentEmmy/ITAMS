@@ -268,6 +268,9 @@ namespace ITAMS.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<bool>("TenantVisible")
+                        .HasColumnType("bit");
+
                     b.Property<DateTimeOffset>("TimestampUtc")
                         .HasColumnType("datetimeoffset");
 

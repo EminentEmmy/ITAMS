@@ -84,6 +84,10 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy("PlatformOwner", p => p.RequireRole("SuperAdmin").RequireClaim("tid", PlatformConstants.TenantId));
 
 // ---------------------------------------------------------------- rate limiting
+var loginLimit = builder.Configuration.GetValue("RateLimits:LoginPerMinute", 5);
+var apiLimit = builder.Configuration.GetValue("RateLimits:ApiPerMinute", 120);
+
+
 builder.Services.AddRateLimiter(o =>
 {
     o.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -91,13 +95,13 @@ builder.Services.AddRateLimiter(o =>
     // Applied explicitly to the login endpoint: 5 attempts / minute / IP.
     o.AddPolicy("auth", ctx => RateLimitPartition.GetFixedWindowLimiter(
         ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-        _ => new FixedWindowRateLimiterOptions { PermitLimit = 5, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = loginLimit, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
 
     // Everything else: 120 requests / minute per user (or per IP when anonymous).
     o.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(ctx =>
         RateLimitPartition.GetFixedWindowLimiter(
             ctx.User.FindFirstValue("sub") ?? ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-            _ => new FixedWindowRateLimiterOptions { PermitLimit = 120, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+            _ => new FixedWindowRateLimiterOptions { PermitLimit = apiLimit, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
 });
 
 var app = builder.Build();
@@ -150,3 +154,5 @@ app.MapGet("/api/health", () => Results.Ok(new { status = "ok" })).AllowAnonymou
 app.MapControllers();
 
 app.Run();
+
+public partial class Program { }   // for integration tests

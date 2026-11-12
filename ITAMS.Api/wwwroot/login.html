@@ -1,43 +1,93 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Sign in to ITAMS</title>
-  <link rel="stylesheet" href="/css/app.css">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sign in to ITAMS</title>
+    <link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
-  <div class="login">
-    <section class="login-sign" aria-hidden="false">
-      <div class="brand"><span class="mark" aria-hidden="true"></span><span class="brand-name">ITAMS</span></div>
-      <h1>Every check-in desk, printer and scale, accounted for.</h1>
-      <p>IT asset management for airport and cargo operations.</p>
-    </section>
+    <div class="login">
+        <section class="login-sign" aria-hidden="false">
+            <div class="login-carousel">
+                <div class="slide slide-1 active"></div>
+                <div class="slide slide-2"></div>
+                <div class="slide slide-3"></div>
+                <div class="slide slide-4"></div>
+            </div>
 
-    <section class="login-form">
-      <form id="login-form" autocomplete="on" novalidate>
-        <h2>Sign in</h2>
-        <div id="notice" class="notice" role="status" hidden>Password updated. Sign in with your new password.</div>
-        <div id="error" class="alert" role="alert" hidden></div>
+            <div class="login-sign-content">
+                <div class="brand">
+                    <span class="mark" aria-hidden="true"></span>
+                    <span class="brand-name">ITAMS</span>
+                </div>
 
-        <label class="field">
-          <span>Company code</span>
-          <input id="tenant" name="tenant" type="text" autocomplete="organization" autocapitalize="none" spellcheck="false" required maxlength="50">
-        </label>
-        <label class="field">
-          <span>Work email</span>
-          <input id="email" name="email" type="email" autocomplete="username" required maxlength="200">
-        </label>
-        <label class="field">
-          <span>Password</span>
-          <input id="password" name="password" type="password" autocomplete="current-password" required maxlength="200">
-        </label>
+                <div class="hero-copy">
+                    <h1>Every check-in desk, printer and scale, accounted for.</h1>
+                    <p>IT asset management for airport and cargo operations.</p>
+                    <ul class="chips">
+                        <li>Track assets</li>
+                        <li>Schedule maintenance</li>
+                        <li>Audit trail</li>
+                    </ul>
+                </div>
 
-        <button id="submit" class="btn btn-sign" type="submit">Sign in</button>
-      </form>
-    </section>
-  </div>
+                <div class="dots" aria-hidden="true">
+                    <span class="dot active"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+                </div>
+            </div>
+        </section>
 
-  <script type="module" src="/js/login.js"></script>
+        <section class="login-form">
+            <div class="lf-top">
+                <span class="lf-brand">ITAMS</span>
+                <a href="mailto:support@yourcompany.com" class="lf-help">Need help?</a>
+            </div>
+
+            <form id="login-form" autocomplete="on" novalidate>
+                <h2>Sign in</h2>
+                <p class="lf-sub">Use your company code and work email to manage your assets.</p>
+
+                <div id="notice" class="notice" role="status" hidden>Password updated. Sign in with your new password.</div>
+                <div id="error" class="alert" role="alert" hidden></div>
+
+                <label class="field">
+                    <span>Company code</span>
+                    <input id="tenant" name="tenant" type="text" autocomplete="organization" autocapitalize="none" spellcheck="false" required maxlength="50">
+                    <small class="hint">Provided by your administrator</small>
+                </label>
+
+                <label class="field">
+                    <span>Work email</span>
+                    <input id="email" name="email" type="email" autocomplete="username" required maxlength="200">
+                </label>
+
+                <div class="field">
+                    <label for="password"><span>Password</span></label>
+                    <div class="pw-wrap">
+                        <input id="password" name="password" type="password" autocomplete="current-password" required maxlength="200">
+                        <button id="toggle-pw" class="pw-toggle" type="button" aria-label="Show password" aria-pressed="false">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" />
+                                <circle cx="12" cy="12" r="3" />
+                            </svg>
+                        </button>
+                    </div>
+                    <a href="mailto:support@yourcompany.com?subject=Password%20reset" class="lf-forgot">Forgot password?</a>
+                </div>
+
+                <button id="submit" class="btn btn-sign" type="submit">Sign in</button>
+
+                <p class="lf-access">Don't have access? <a href="mailto:support@yourcompany.com">Contact your IT administrator</a></p>
+            </form>
+
+            <div class="lf-bottom">
+                <span>© 2026 ITAMS</span>
+                <span><a href="#">Support</a> · <a href="#">Privacy</a></span>
+            </div>
+        </section>
+    </div>
+
+    <script type="module" src="/js/login.js"></script>
 </body>
 </html>

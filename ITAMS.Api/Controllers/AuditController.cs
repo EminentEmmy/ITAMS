@@ -20,7 +20,9 @@ public class AuditController(ApplicationDbContext db) : ControllerBase
         page = Math.Max(page, 1);
         pageSize = Math.Clamp(pageSize, 1, 100);
 
-        var query = db.SecurityAuditLogs.AsNoTracking().AsQueryable();   // tenant filter applies
+        var query = db.SecurityAuditLogs.AsNoTracking()
+            .Where(l => l.TenantVisible)          // tenants never see the repeat "viewed" rows
+            .AsQueryable();                       // tenant filter applies
         query = category switch
         {
             "security" => query.Where(l => l.Action.StartsWith("LOGIN") || l.Action.StartsWith("LOGOUT")

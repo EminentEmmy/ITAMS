@@ -155,7 +155,11 @@ public class ApplicationDbContext : DbContext
             }
             else if (entry.State == EntityState.Modified)
             {
-                entry.Property(e => e.TenantId).IsModified = false;
+                // Undo any attempt to move the row to another tenant, in memory as well as in the UPDATE,
+                // so the audit entry that follows is also recorded under the row's real tenant.
+                var tenant = entry.Property(e => e.TenantId);
+                tenant.CurrentValue = tenant.OriginalValue;
+                tenant.IsModified = false;
             }
         }
     }

@@ -14,4 +14,10 @@ public class SecurityAuditLog
     public string IpAddress { get; set; } = default!;
     public string? UserAgent { get; set; }
     public DateTimeOffset TimestampUtc { get; set; } = DateTimeOffset.UtcNow;
+
+
+    /// <summary>False for repeat "platform viewed" rows inside a 30-minute window. Tenants only see true rows.</summary>
+
+    public bool TenantVisible { get; set; } = true;
 }
+
