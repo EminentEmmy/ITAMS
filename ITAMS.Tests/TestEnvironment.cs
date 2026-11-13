@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace ITAMS.Tests;
 
@@ -27,7 +28,11 @@ public sealed class FakeCurrentUser(string? tenantId, string? userId = null) : I
 public sealed class ItamsFactory : WebApplicationFactory<Program>
 {
     // "Testing" skips the Development-only auto-migrate and seeding: the tests build their own data.
-    protected override void ConfigureWebHost(IWebHostBuilder builder) => builder.UseEnvironment("Testing");
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        builder.UseEnvironment("Testing");
+        builder.ConfigureLogging(l => l.SetMinimumLevel(LogLevel.Warning));   // don't spam the test output with EF logs
+    }
 }
 
 [CollectionDefinition("Isolation")]
