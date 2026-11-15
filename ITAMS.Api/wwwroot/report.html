@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Report a fault</title>
+  <link rel="stylesheet" href="/css/app.css">
+  <link rel="stylesheet" href="/css/report.css">
+</head>
+<body>
+  <header class="report-head">
+    <span class="mark" aria-hidden="true"></span>
+    <span class="report-brand">ITAMS</span>
+    <span id="org" class="report-org"></span>
+  </header>
+
+  <main class="report-main">
+    <section id="state-loading"><p>Checking your link…</p></section>
+
+    <section id="state-invalid" hidden>
+      <h1>This link is not valid</h1>
+      <p>It may have been replaced or switched off. Please ask IT support for the current report link, or call them directly.</p>
+    </section>
+
+    <section id="state-form" hidden>
+      <h1>Report a fault to <span id="org-title"></span> IT support</h1>
+      <p class="muted">No sign-in needed. Tell us what is wrong and IT support will pick it up. If it is an emergency, also call IT support directly.</p>
+
+      <form id="report-form" novalidate>
+        <div id="error" class="alert" role="alert" hidden></div>
+
+        <fieldset class="choices">
+          <legend>How bad is it?</legend>
+          <label class="choice"><input type="radio" name="impact" value="Blocking"><span>I cannot work, or a service is stopped</span></label>
+          <label class="choice"><input type="radio" name="impact" value="Degraded" checked><span>Working, but with problems</span></label>
+          <label class="choice"><input type="radio" name="impact" value="Minor"><span>Small issue, can wait</span></label>
+        </fieldset>
+
+        <label class="field"><span>What is wrong? (short summary)</span>
+          <input id="r-title" required minlength="5" maxlength="150" autocomplete="off"></label>
+        <label class="field"><span>Details</span>
+          <textarea id="r-desc" required minlength="10" maxlength="2000" placeholder="What happened, what you were doing, any message on the screen"></textarea></label>
+
+        <div class="grid-2">
+          <label class="field"><span>Type of problem</span><select id="r-category"></select></label>
+          <label class="field"><span>Where are you?</span>
+            <input id="r-location" maxlength="200" placeholder="e.g. T2 check-in desk 14"></label>
+        </div>
+        <label class="field"><span>Device or serial number (optional)</span>
+          <input id="r-asset" maxlength="100" autocomplete="off"></label>
+
+        <div class="grid-2">
+          <label class="field"><span>Your name</span><input id="r-name" required minlength="2" maxlength="120" autocomplete="name"></label>
+          <label class="field"><span>Phone or extension (optional)</span><input id="r-contact" maxlength="120" autocomplete="tel"></label>
+        </div>
+
+        <!-- Spam trap: hidden from people, bots tend to fill it in -->
+        <div class="trap" aria-hidden="true">
+          <label>Website <input id="r-website" tabindex="-1" autocomplete="off"></label>
+        </div>
+
+        <p class="muted small">Your name and contact are shared with IT support only.</p>
+        <button id="r-submit" class="btn btn-sign big" type="submit">Send report</button>
+      </form>
+    </section>
+
+    <section id="state-done" hidden>
+      <h1>Report received</h1>
+      <p>Your reference number is <strong id="ref" class="ref"></strong>. Quote it if you call IT support.</p>
+      <button id="again" class="btn" type="button">Report another fault</button>
+    </section>
+  </main>
+
+  <script type="module" src="/js/report.js"></script>
+</body>
+</html>

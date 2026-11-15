@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 namespace ITAMS.Api.Controllers;
 
 [ApiController]
+[Authorize(Roles = "TenantAdmin,Technician,Auditor")]
 [Route("api/assets/{assetId:int}/maintenance")]
 public class MaintenanceController(ApplicationDbContext db, ICurrentUserService me) : ControllerBase
 {

@@ -88,13 +88,12 @@ public class PlatformBoundaryTests(TestEnvironment env)
     }
 
     [Fact]
-    public async Task Through_the_customer_api_the_owner_sees_no_customer_data()
+    public async Task The_owner_has_no_access_to_the_customer_asset_api_at_all()
     {
         var owner = await env.SignInAsync("platform", "owner@platform.test");
 
-        var page = await owner.GetJsonAsync<PagedResult<AssetDto>>("/api/assets");
-
-        Assert.Empty(page.Items);   // the owner's own tenant is empty; the platform API is the only window into customers
+        // The platform API is the only window into customers; the customer asset API is for organization staff.
+        Assert.Equal(HttpStatusCode.Forbidden, (await owner.GetAsync("/api/assets")).StatusCode);
     }
 
     [Fact]

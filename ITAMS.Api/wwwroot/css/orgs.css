@@ -1,0 +1,12 @@
+/* Platform console: organization list tools and the onboarding prompt. Loaded after topbar.css. */
+.org-count { margin: -.25rem 0 .75rem; }
+
+/* the owner console has wide tables, so let it use more of a big screen */
+.shell.platform .content > main { max-width: 1680px; }
+
+/* quiet nudge at the bottom of the table card */
+.onboard { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem 1.5rem;
+  margin: 1rem; padding: 1rem 1.25rem; border: 2px dashed var(--line); border-radius: 4px; background: #fafbfd; }
+.onboard strong { font-family: var(--font-sign); font-size: 1.1rem; }
+.onboard p { margin: .15rem 0 0; }
+.table-wrap.empty .btn { margin-top: .5rem; }

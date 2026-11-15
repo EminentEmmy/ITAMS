@@ -20,4 +20,5 @@ public class AppUser
     public DateTime? LockoutEndUtc { get; set; }
 
     public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
+    public DateTime? NotificationsSeenUtc { get; set; }
 }

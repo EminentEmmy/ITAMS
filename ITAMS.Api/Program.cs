@@ -29,6 +29,8 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 // ---------------------------------------------------------------- services
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+builder.Services.AddScoped<ITenantOverride>(sp => (CurrentUserService)sp
+    .GetRequiredService<ICurrentUserService>());   // same instance
 builder.Services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
 builder.Services.AddSingleton<ITokenService, TokenService>();
 
@@ -87,6 +89,8 @@ builder.Services.AddAuthorizationBuilder()
 var loginLimit = builder.Configuration.GetValue("RateLimits:LoginPerMinute", 5);
 var apiLimit = builder.Configuration.GetValue("RateLimits:ApiPerMinute", 120);
 
+var reportLimit = builder.Configuration.GetValue("RateLimits:PublicReportPer10Minutes", 30);
+
 
 builder.Services.AddRateLimiter(o =>
 {
@@ -102,6 +106,11 @@ builder.Services.AddRateLimiter(o =>
         RateLimitPartition.GetFixedWindowLimiter(
             ctx.User.FindFirstValue("sub") ?? ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown",
             _ => new FixedWindowRateLimiterOptions { PermitLimit = apiLimit, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+
+    o.AddPolicy("public-report", ctx => RateLimitPartition.GetFixedWindowLimiter(
+    ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+    _ => new FixedWindowRateLimiterOptions { PermitLimit = reportLimit, Window = TimeSpan.FromMinutes(10), QueueLimit = 0 }));
+
 });
 
 var app = builder.Build();

@@ -1,0 +1,83 @@
+/* ITAMS app shell: sidebar on desktop, slide-out drawer on phones. Loaded after app.css. */
+:root { --side-w: 16.5rem; --side-w-collapsed: 4.75rem; }
+
+.shell { --side: var(--side-w); display: grid; grid-template-columns: var(--side) minmax(0, 1fr); min-height: 100vh; }
+.shell.collapsed { --side: var(--side-w-collapsed); }
+.content { min-width: 0; }
+body.pending .shell { visibility: hidden; }   /* nothing shows until the script has verified the session */
+main:focus { outline: none; }
+
+/* ---------- sidebar ---------- */
+.sidebar { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; overflow-y: auto;
+  background: var(--ink); color: #fff; border-right: 1px solid rgba(255, 255, 255, .08); }
+.shell.platform .sidebar { background: #0a1220; border-right: 6px solid var(--sign); }
+.sidebar :focus-visible { outline: 3px solid var(--sign); outline-offset: 2px; }
+
+.side-head { display: flex; align-items: center; gap: .75rem; padding: 1rem 1rem .75rem; }
+.side-head .brand-name { font-family: var(--font-sign); font-size: 1.6rem; font-weight: 700; letter-spacing: .02em; }
+.sidebar .mark { background: var(--sign); }
+.sidebar .mark::after { border-color: var(--ink); }
+
+.side-org { margin: 0 1rem 1rem; padding: .35rem .6rem; border-left: 4px solid var(--sign);
+  background: rgba(255, 196, 0, .14); color: var(--sign); font-family: var(--font-sign); font-weight: 600; overflow-wrap: anywhere; }
+.shell.platform .side-org { background: var(--sign); color: var(--ink); }
+
+.side-nav { display: flex; flex-direction: column; gap: .15rem; padding: 0 .5rem; flex: 1; }
+.nav-item, .side-link { display: flex; align-items: center; gap: .85rem; width: 100%; padding: .7rem .8rem;
+  border: 0; border-left: 4px solid transparent; border-radius: 4px; background: transparent; color: inherit;
+  font-family: var(--font-sign); font-size: 1.05rem; font-weight: 600; text-align: left; text-decoration: none; cursor: pointer; }
+.nav-item:hover, .side-link:hover { background: rgba(255, 255, 255, .09); }
+.nav-item[aria-current="page"] { background: rgba(255, 196, 0, .16); color: var(--sign); border-left-color: var(--sign); }
+
+.icon { width: 1.4rem; height: 1.4rem; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+.side-foot { display: grid; gap: .15rem; padding: .75rem .5rem 1rem; border-top: 1px solid rgba(255, 255, 255, .12); }
+.side-user { padding: .25rem .8rem .6rem; }
+.side-user .user-name { font-weight: 600; overflow-wrap: anywhere; }
+.side-user .role { display: inline-block; margin-top: .25rem; background: var(--sign); color: var(--ink); }
+
+/* ---------- phone top bar and drawer scrim (hidden on desktop) ---------- */
+.topbar, .scrim { display: none; }
+.menu-btn { display: grid; place-items: center; width: 2.5rem; height: 2.5rem; border: 2px solid currentColor; border-radius: 4px;
+  background: transparent; color: inherit; cursor: pointer; }
+.topbar .brand-name { font-family: var(--font-sign); font-size: 1.4rem; font-weight: 700; }
+.topbar-org { margin-left: auto; font-family: var(--font-sign); font-weight: 600; }
+
+.skip-link { position: absolute; left: .5rem; top: -4rem; z-index: 50; padding: .5rem 1rem; border: 3px solid var(--ink);
+  background: var(--sign); color: var(--ink); font-family: var(--font-sign); font-weight: 600; cursor: pointer; }
+.skip-link:focus { top: .5rem; }
+
+/* ---------- desktop: collapsed icon rail ---------- */
+@media (min-width: 861px) {
+  .shell.collapsed .nav-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .shell.collapsed .side-org { display: none; }
+  .shell.collapsed .side-head { justify-content: center; padding-inline: 0; }
+  .shell.collapsed .nav-item, .shell.collapsed .side-link { justify-content: center; padding-inline: 0; }
+  .shell.collapsed .collapse-btn .icon { transform: rotate(180deg); }
+}
+
+/* ---------- phones ---------- */
+@media (max-width: 860px) {
+  .shell { grid-template-columns: minmax(0, 1fr); }
+
+  .sidebar { position: fixed; inset: 0 auto 0 0; z-index: 30; width: min(18rem, 86vw);
+    transform: translateX(-100%); visibility: hidden; transition: transform .18s ease-out, visibility 0s linear .18s; }
+  .shell.open .sidebar { transform: none; visibility: visible; transition-delay: 0s; }
+  .shell.open .scrim { display: block; position: fixed; inset: 0; z-index: 20; background: rgba(18, 32, 58, .6); }
+
+  .topbar { display: flex; align-items: center; gap: .6rem; position: sticky; top: 0; z-index: 10;
+    padding: .5rem 1rem; background: var(--sign); color: var(--ink); border-bottom: 4px solid var(--ink); }
+  .shell.platform .topbar { background: var(--ink); color: var(--sign); border-bottom-color: var(--sign); }
+  .shell.platform .topbar .mark { background: var(--sign); }
+  .shell.platform .topbar .mark::after { border-color: var(--ink); }
+
+  .collapse-btn { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) { .sidebar { transition: none; } }
+
+/* Left-align page content and let it use more of wide screens */
+.content > main {
+    margin-inline: 0;
+    max-width: 1400px;
+}

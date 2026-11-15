@@ -31,7 +31,7 @@ public sealed class ItamsFactory : WebApplicationFactory<Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
-        builder.ConfigureLogging(l => l.SetMinimumLevel(LogLevel.Warning));   // don't spam the test output with EF logs
+        builder.ConfigureLogging(l => l.SetMinimumLevel(LogLevel.Warning));   // keep test output readable
     }
 }
 
@@ -46,6 +46,8 @@ public class IsolationCollection : ICollectionFixture<TestEnvironment> { }
 public sealed class TestEnvironment : IAsyncLifetime
 {
     public const string Password = "Test-Password-123!";
+    public const string AlphaReportToken = "alpha-report-token-0123456789abcdef";
+    public const string BetaReportToken = "beta-report-token-0123456789abcdef";
 
     private readonly string _dbName = $"ITAMS_Test_{Guid.NewGuid():N}";
     private readonly ConcurrentDictionary<string, Lazy<Task<HttpClient>>> _clients = new();
@@ -72,6 +74,7 @@ public sealed class TestEnvironment : IAsyncLifetime
         Environment.SetEnvironmentVariable("Jwt__Key", "test-only-signing-key-that-is-longer-than-32-bytes!!");
         Environment.SetEnvironmentVariable("RateLimits__LoginPerMinute", "100000");
         Environment.SetEnvironmentVariable("RateLimits__ApiPerMinute", "100000");
+        Environment.SetEnvironmentVariable("RateLimits__PublicReportPer10Minutes", "100000");
 
         Factory = new ItamsFactory();
     }
@@ -107,6 +110,34 @@ public sealed class TestEnvironment : IAsyncLifetime
         return await db.Assets.IgnoreQueryFilters().Where(a => a.TenantId == tenant).Select(a => a.Id).ToListAsync();
     }
 
+    public async Task<List<int>> TicketIdsAsync(string tenant)
+    {
+        await using var db = Raw();
+        return await db.Tickets.IgnoreQueryFilters().Where(t => t.TenantId == tenant).Select(t => t.Id).ToListAsync();
+    }
+
+    public async Task<Ticket> TicketRowAsync(int id)
+    {
+        await using var db = Raw();
+        return await db.Tickets.IgnoreQueryFilters().AsNoTracking().SingleAsync(t => t.Id == id);
+    }
+
+    public async Task<int> MaxTicketNumberAsync(string tenant)
+    {
+        await using var db = Raw();
+        return await db.Tickets.IgnoreQueryFilters().Where(t => t.TenantId == tenant).MaxAsync(t => t.Number);
+    }
+
+    /// <summary>Anonymous client holding only an organization's public report token (no session).</summary>
+    public async Task<HttpResponseMessage> PublicAsync(HttpMethod method, string? token, object? body = null)
+    {
+        using var client = NewClient(handleCookies: false);
+        var request = new HttpRequestMessage(method, "/api/public/report");
+        if (token is not null) request.Headers.Add("X-Report-Token", token);
+        if (body is not null) request.Content = JsonContent.Create(body, mediaType: null, options: TestHttp.Json);
+        return await client.SendAsync(request);
+    }
+
     public async Task<Asset> AssetRowAsync(int id)
     {
         await using var db = Raw();
@@ -132,10 +163,14 @@ public sealed class TestEnvironment : IAsyncLifetime
         return await db.SecurityAuditLogs.IgnoreQueryFilters().Where(l => l.TenantId == tenant).Select(l => l.Id).ToListAsync();
     }
 
-    public async Task CreateTenantWithAdminAsync(string tenantId, string email)
+    public async Task CreateTenantWithAdminAsync(string tenantId, string email, string? reportToken = null, bool active = true)
     {
         await using var db = Raw();
-        db.Tenants.Add(new Tenant { Id = tenantId, Name = tenantId });
+        db.Tenants.Add(new Tenant
+        {
+            Id = tenantId, Name = tenantId, IsActive = active,
+            PublicReportToken = reportToken, PublicReportEnabled = reportToken is not null
+        });
         db.Users.Add(NewUser(tenantId, email, UserRole.TenantAdmin, new Pbkdf2PasswordHasher().Hash(Password)));
         await db.SaveChangesAsync();
     }
@@ -178,8 +213,8 @@ public sealed class TestEnvironment : IAsyncLifetime
         await using (var db = Db(null))
         {
             db.Tenants.AddRange(
-                new Tenant { Id = "alpha", Name = "Alpha Airlines" },
-                new Tenant { Id = "beta", Name = "Beta Cargo" },
+                new Tenant { Id = "alpha", Name = "Alpha Airlines", PublicReportToken = AlphaReportToken, PublicReportEnabled = true },
+                new Tenant { Id = "beta", Name = "Beta Cargo", PublicReportToken = BetaReportToken, PublicReportEnabled = true },
                 new Tenant { Id = PlatformConstants.TenantId, Name = "ITAMS Platform" });
 
             db.Users.AddRange(
@@ -188,6 +223,7 @@ public sealed class TestEnvironment : IAsyncLifetime
                 NewUser("alpha", "audit@alpha.test", UserRole.Auditor, hash),
                 // A user whose ROLE says SuperAdmin but who lives in a customer tenant: must NOT be a platform owner.
                 NewUser("alpha", "super@alpha.test", UserRole.SuperAdmin, hash),
+                NewUser("alpha", "requester@alpha.test", UserRole.Requester, hash),
                 NewUser("beta", "admin@beta.test", UserRole.TenantAdmin, hash),
                 NewUser("beta", "tech@beta.test", UserRole.Technician, hash),
                 NewUser(PlatformConstants.TenantId, "owner@platform.test", UserRole.SuperAdmin, hash));
@@ -220,6 +256,20 @@ public sealed class TestEnvironment : IAsyncLifetime
             AssetId = first.Id, TechnicianId = adminId, TechnicianName = "Seed Admin",
             Description = $"{tenant} seed maintenance"
         });
+
+        db.Tickets.AddRange(
+            new Ticket
+            {
+                Number = 1, Title = $"{tenant} seeded staff ticket", Description = "Seeded by the test set-up.",
+                Category = TicketCategory.Hardware, Impact = TicketImpact.Degraded, Priority = TicketPriority.Normal,
+                Status = TicketStatus.New, Source = TicketSource.StaffAccount, ReporterName = "Seed Admin", CreatedByUserId = adminId
+            },
+            new Ticket
+            {
+                Number = 2, Title = $"{tenant} seeded public ticket", Description = "Seeded by the test set-up.",
+                Category = TicketCategory.Printer, Impact = TicketImpact.Blocking, Priority = TicketPriority.High,
+                Status = TicketStatus.New, Source = TicketSource.PublicLink, ReporterName = "Walk-up reporter"
+            });
         await db.SaveChangesAsync();
     }
 

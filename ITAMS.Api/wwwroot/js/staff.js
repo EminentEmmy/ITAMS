@@ -1,11 +1,12 @@
 import { api, el, label } from './api.js';
 import { toast, showError, statusBlock, emptyState, table, lastSeen, showCredentials, initCredentialsDialog } from './ui.js';
 
-const ROLES = ['TenantAdmin', 'Technician', 'Auditor'];
+const ROLES = ['TenantAdmin', 'Technician', 'Auditor', 'Requester'];
 const ROLE_HELP = {
   TenantAdmin: 'Manages staff, assets and sees the audit trail.',
   Technician: 'Adds and edits assets and logs maintenance.',
-  Auditor: 'Read-only access to assets and the audit trail.'
+  Auditor: 'Read-only access to assets, tickets and the audit trail.',
+  Requester: 'Reports faults and follows their own tickets. Cannot see assets or other people\'s tickets.'
 };
 
 const $ = (id) => document.getElementById(id);

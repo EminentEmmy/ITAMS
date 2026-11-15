@@ -1,6 +1,8 @@
 import { api, el, label, fmtDate, ApiError } from './api.js';
+import { initShell } from './shell.js';
 import { initStaff, loadStaff } from './staff.js';
 import { initAudit, loadAudit } from './audit.js';
+import { initTickets, loadTickets, countNewTickets, openTicket } from './tickets.js';
 
 const STATUSES = ['InStock', 'Deployed', 'UnderRepair', 'Decommissioned'];
 const TYPES = ['SystemUnit', 'BoardingPrinter', 'CargoScaleInterface', 'Monitor', 'Other'];
@@ -215,27 +217,69 @@ async function decommission() {
   } catch (err) { showError($('detail-error'), err); }
 }
 
-// ---------------------------------------------------------------- tabs (Assets for everyone, Staff for admins, Audit for admins and auditors)
-const TABS = ['assets', 'staff', 'audit'];
+// ---------------------------------------------------------------- sidebar sections (hash routing: #assets, #tickets, #staff, #audit)
+const SECTIONS = [
+  { id: 'assets', label: 'Assets', icon: 'assets', visible: () => state.me.role !== 'Requester' },
+  { id: 'tickets', label: 'Tickets', icon: 'tickets' },
+  { id: 'staff', label: 'Staff', icon: 'staff', visible: () => isAdmin() },
+  { id: 'audit', label: 'Audit trail', icon: 'audit', visible: () => isAdmin() || state.me.role === 'Auditor' }
+];
 
-function selectTab(name) {
-  for (const t of TABS) {
-    $(`tab-${t}`).setAttribute('aria-selected', String(t === name));
-    $(`panel-${t}`).hidden = t !== name;
-  }
-  if (name === 'staff') loadStaff();
-  if (name === 'audit') loadAudit();
-}
+function setupShell() {
+  const items = SECTIONS.filter(s => !s.visible || s.visible());
+  const shell = initShell({
+    items,
+    user: state.me,
+    orgLabel: state.me.tenantId.toUpperCase(),
+    roleLabel: label(state.me.role),
+    onSignOut: logout,
+    bell: {
+      onOpen: () => refreshBell(),
+      onItemClick: (item) => { location.hash = 'tickets'; openTicket(item.ticketId); },
+      onMarkAllRead: async () => {
+        try { await api('/api/notifications/read', { method: 'POST' }); } catch { /* try again next time */ }
+        await refreshBell();
+      }
+    }
+  });
 
-function setupTabs() {
-  const visible = { assets: true, staff: isAdmin(), audit: isAdmin() || state.me.role === 'Auditor' };
-  $('tabs').hidden = !(visible.staff || visible.audit);
-  for (const [name, show] of Object.entries(visible)) {
-    $(`tab-${name}`).hidden = !show;
-    $(`tab-${name}`).addEventListener('click', () => selectTab(name));
-  }
-  if (visible.staff) initStaff(state.me);
-  if (visible.audit) initAudit();
+  // The bell: personal unread count and list (what is new, assigned to me, or changed on my tickets).
+  const refreshBell = async () => {
+    try { shell.setNotifications(await api('/api/notifications')); } catch { /* the bell is a convenience */ }
+  };
+
+  // New-ticket count beside "Tickets" (IT staff only; requesters only see their own tickets).
+  const refreshBadge = async () => {
+    if (state.me.role === 'Requester') return;
+    try { shell.setBadge('tickets', await countNewTickets()); } catch { /* the badge is a convenience */ }
+  };
+
+  const refreshAll = () => { refreshBadge(); refreshBell(); };
+
+  initTickets(state.me, refreshAll);
+  if (items.some(i => i.id === 'staff')) initStaff(state.me);
+  if (items.some(i => i.id === 'audit')) initAudit();
+
+  // The address bar decides what shows, so refresh, bookmarks and the Back button all work.
+  const route = () => {
+    const wanted = location.hash.slice(1);
+    const current = items.find(i => i.id === wanted) ?? items[0];
+
+    for (const t of SECTIONS) $(`panel-${t.id}`).hidden = t.id !== current.id;
+    shell.setActive(current.id);
+    shell.setTitle(current.label);
+    document.title = `ITAMS: ${current.label}`;
+
+    if (current.id === 'assets') loadAssets();
+    if (current.id === 'tickets') loadTickets();
+    if (current.id === 'staff') loadStaff();
+    if (current.id === 'audit') loadAudit();
+  };
+
+  addEventListener('hashchange', route);
+  route();
+  refreshAll();
+  setInterval(() => { if (!document.hidden) refreshAll(); }, 60_000);
 }
 
 // ---------------------------------------------------------------- start
@@ -248,9 +292,6 @@ async function start() {
   if (state.me.role === 'SuperAdmin') { location.replace('/platform.html'); return; }
   document.body.classList.remove('pending');
 
-  $('tenant-name').textContent = state.me.tenantId.toUpperCase();
-  $('user-name').textContent = state.me.fullName;
-  $('user-role').textContent = label(state.me.role);
   $('add-asset').hidden = !canWrite();
 
   fillOptions($('filter-status'), STATUSES, true);
@@ -258,7 +299,6 @@ async function start() {
   fillOptions($('f-status'), STATUSES);
   fillOptions($('f-type'), TYPES);
 
-  $('logout').addEventListener('click', logout);
   $('add-asset').addEventListener('click', openAddDialog);
   $('asset-form').addEventListener('submit', saveAsset);
   $('d-status-save').addEventListener('click', updateStatus);
@@ -273,9 +313,8 @@ async function start() {
   $('prev').addEventListener('click', () => { state.page--; loadAssets(); });
   $('next').addEventListener('click', () => { state.page++; loadAssets(); });
 
-  setupTabs();
+  setupShell();
   watchInactivity();
-  await loadAssets();
 }
 
 start();

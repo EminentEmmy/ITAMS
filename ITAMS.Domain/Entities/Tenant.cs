@@ -7,4 +7,6 @@ public class Tenant
     public string Name { get; set; } = default!;
     public bool IsActive { get; set; } = true;
     public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
+    public string? PublicReportToken { get; set; }
+    public bool PublicReportEnabled { get; set; }
 }

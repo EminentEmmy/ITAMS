@@ -1,11 +1,13 @@
 import { api, el, label, fmtDate, ApiError, watchInactivity } from './api.js';
+import { initShell } from './shell.js';
 
 const STATUSES = ['InStock', 'Deployed', 'UnderRepair', 'Decommissioned'];
 const TYPES = ['SystemUnit', 'BoardingPrinter', 'CargoScaleInterface', 'Monitor', 'Other'];
 const ROLE_HELP = {
   TenantAdmin: 'Manages assets and sees the audit trail for their organization.',
   Technician: 'Adds and edits assets and logs maintenance.',
-  Auditor: 'Read-only access, including the audit trail.'
+  Auditor: 'Read-only access, including the audit trail.',
+  Requester: 'Reports faults and follows their own tickets. Cannot see assets.'
 };
 const PAGE = 15;
 const INACTIVITY_MS = 10 * 60 * 1000;   // shorter than staff: this account can see every customer
@@ -71,12 +73,15 @@ async function logout() {
 }
 
 // ---------------------------------------------------------------- organizations list
+let allOrgs = [];   // everything the server sent; searching, filtering and sorting happen here
+
 async function loadOrgs() {
   $('list-error').hidden = true;
   try {
     const [overview, orgs] = await Promise.all([api('/api/platform/overview'), api('/api/platform/tenants')]);
+    allOrgs = orgs;
     renderLedger(overview);
-    renderOrgs(orgs);
+    renderOrgs();
   } catch (err) {
     if (err.status !== 401) showError($('list-error'), err);
   }
@@ -94,16 +99,51 @@ function renderLedger(o) {
       : 'Failed sign-ins in 24 hours'));
 }
 
-function renderOrgs(orgs) {
-  if (orgs.length === 0) {
+const byName = (a, b) => a.name.localeCompare(b.name);
+const time = (iso) => (iso ? Date.parse(iso) : -Infinity);
+const SORTS = {
+  name: byName,
+  newest: (a, b) => time(b.createdUtc) - time(a.createdUtc),
+  oldest: (a, b) => time(a.createdUtc) - time(b.createdUtc),
+  activity: (a, b) => (time(b.lastSignIn) - time(a.lastSignIn)) || byName(a, b),   // NaN (both never) falls through to the name
+  users: (a, b) => (b.users - a.users) || byName(a, b),
+  assets: (a, b) => (b.assets - a.assets) || byName(a, b),
+  repair: (a, b) => (b.underRepair - a.underRepair) || byName(a, b)
+};
+
+function renderOrgs() {
+  const total = allOrgs.length;
+  $('org-tools').hidden = total === 0;
+
+  if (total === 0) {
     $('orgs-host').replaceChildren(emptyState('No organizations yet',
-      'Create the first organization to give a customer access.'));
+      'Click New organization to set up your first client workspace and assign their administrator.'));
     return;
   }
 
-  const rows = orgs.map(t => el('tr', {},
+  const query = $('org-search').value.trim().toLowerCase();
+  const status = $('org-status-filter').value;
+
+  const shown = allOrgs
+    .filter(o => !query || o.name.toLowerCase().includes(query) || o.id.toLowerCase().includes(query))
+    .filter(o => !status || (status === 'active') === o.isActive)
+    .sort(SORTS[$('org-sort').value] ?? byName);
+
+  $('org-count').textContent = shown.length === total
+    ? `${total} ${total === 1 ? 'organization' : 'organizations'}`
+    : `Showing ${shown.length} of ${total} organizations`;
+
+  if (shown.length === 0) {
+    $('orgs-host').replaceChildren(el('div', { class: 'table-wrap empty' },
+      el('h2', {}, 'No organizations match'),
+      el('p', { class: 'muted' }, 'Try a different name or company code, or another status.'),
+      el('button', { class: 'btn btn-quiet', type: 'button', onclick: clearOrgFilters }, 'Clear search and filters')));
+    return;
+  }
+
+  const rows = shown.map(t => el('tr', {},
     el('td', {},
-      el('button', { class: 'link', type: 'button', onclick: () => openOrg(t.id) }, t.name),
+      el('button', { class: 'link', type: 'button', onclick: () => { location.hash = `organizations/${encodeURIComponent(t.id)}`; } }, t.name),
       el('div', { class: 'muted code' }, t.id)),
     el('td', {}, statusBlock(t.isActive ? 'Active' : 'Suspended')),
     el('td', {}, num(t.users)),
@@ -112,8 +152,25 @@ function renderOrgs(orgs) {
     el('td', {}, t.lastSignIn ? fmtDate(t.lastSignIn) : 'Never'),
     el('td', {}, fmtDate(t.createdUtc))));
 
-  $('orgs-host').replaceChildren(
-    table(['Organization', 'Status', 'Users', 'Assets', 'Under repair', 'Last sign-in', 'Created'], rows));
+  const card = table(['Organization', 'Status', 'Users', 'Assets', 'Under repair', 'Last sign-in', 'Created'], rows);
+  card.append(onboardPrompt());   // sits at the bottom of the table card
+  $('orgs-host').replaceChildren(card);
+}
+
+function clearOrgFilters() {
+  $('org-search').value = '';
+  $('org-status-filter').value = '';
+  $('org-sort').value = 'name';
+  renderOrgs();
+}
+
+/** A quiet nudge under the list, so a short list never looks unfinished. */
+function onboardPrompt() {
+  return el('div', { class: 'onboard' },
+    el('div', {},
+      el('strong', {}, 'Ready to onboard your next client?'),
+      el('p', { class: 'muted' }, 'Click New organization to set up their workspace and assign their first administrator.')),
+    el('button', { class: 'btn btn-sign btn-small', type: 'button', onclick: openOrgDialog }, 'New organization'));
 }
 
 // ---------------------------------------------------------------- new organization
@@ -164,7 +221,7 @@ async function openOrg(id) {
     selectTab('users');
     showView('detail');
   } catch (err) {
-    if (err.status !== 401) showError($('list-error'), err);
+    if (err.status !== 401) { toast('That organization could not be opened.'); location.replace('#organizations'); }
   }
 }
 
@@ -361,6 +418,38 @@ async function loadActivity() {
   }
 }
 
+// ---------------------------------------------------------------- sidebar and routing (#organizations, #organizations/<code>)
+let shell;
+
+function setupShell() {
+  shell = initShell({
+    items: [{ id: 'organizations', label: 'Organizations', icon: 'organizations' }],
+    user: state.me,
+    orgLabel: 'Platform console',
+    roleLabel: 'Platform owner',
+    variant: 'platform',
+    onSignOut: logout
+  });
+  addEventListener('hashchange', route);
+  route();
+}
+
+async function route() {
+  const [section, id] = location.hash.slice(1).split('/');
+  if (section !== 'organizations') { location.replace('#organizations'); return; }   // fires hashchange again
+
+  shell.setActive('organizations');
+  shell.setTitle('Organizations');
+  document.title = 'ITAMS Platform: Organizations';
+
+  if (id) {
+    await openOrg(decodeURIComponent(id));
+  } else {
+    showView('list');
+    await loadOrgs();
+  }
+}
+
 // ---------------------------------------------------------------- start
 async function start() {
   try {
@@ -371,16 +460,17 @@ async function start() {
   if (state.me.role !== 'SuperAdmin') { location.replace('/index.html'); return; }
   document.body.classList.remove('pending');
 
-  $('user-name').textContent = state.me.fullName;
 
   fillOptions($('a-status'), STATUSES);
   fillOptions($('a-type'), TYPES);
-  fillOptions($('u-role'), ['TenantAdmin', 'Technician', 'Auditor']);
+  fillOptions($('u-role'), ['TenantAdmin', 'Technician', 'Auditor', 'Requester']);
 
-  $('logout').addEventListener('click', logout);
   $('new-org').addEventListener('click', openOrgDialog);
+  $('org-search').addEventListener('input', debounce(renderOrgs, 150));
+  $('org-status-filter').addEventListener('change', renderOrgs);
+  $('org-sort').addEventListener('change', renderOrgs);
   $('org-form').addEventListener('submit', saveOrg);
-  $('back').addEventListener('click', () => { showView('list'); loadOrgs(); });
+  $('back').addEventListener('click', () => { location.hash = 'organizations'; });
   $('org-toggle').addEventListener('click', toggleOrg);
   $('add-user').addEventListener('click', openUserDialog);
   $('user-form').addEventListener('submit', saveUser);
@@ -405,7 +495,7 @@ async function start() {
   $('activity-next').addEventListener('click', () => { state.activityPage++; loadActivity(); });
 
   watchInactivity(INACTIVITY_MS, logout);
-  await loadOrgs();
+  setupShell();
 }
 
 start();

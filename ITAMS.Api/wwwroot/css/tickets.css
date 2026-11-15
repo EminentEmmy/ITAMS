@@ -1,0 +1,28 @@
+/* Tickets screen and nav badge. Loaded after shell.css on the dashboard. */
+.status-New { background: var(--sign); color: var(--ink); }
+.status-InProgress { background: #2f5fa8; color: #fff; }
+.status-Resolved { background: var(--ok); color: #fff; }
+.status-Closed { background: var(--retired); color: #fff; }
+.status-Critical { background: var(--danger); color: #fff; }
+.status-High { background: var(--warn); color: #fff; }
+.status-Normal { background: var(--stock); color: var(--ink); }
+.status-Low { background: #edf1f7; color: var(--ink-soft); }
+
+.nav-item { position: relative; }
+.nav-badge { margin-left: auto; min-width: 1.4rem; padding: .05rem .4rem; border-radius: 999px; background: var(--sign); color: var(--ink);
+  font-family: var(--font-sign); font-size: .8rem; font-weight: 700; text-align: center; }
+@media (min-width: 861px) {
+  .shell.collapsed .nav-badge { position: absolute; top: .2rem; right: .35rem; margin: 0; min-width: 1.1rem; padding: 0 .25rem; font-size: .7rem; }
+}
+
+.link-card { margin: 0 0 1.25rem; padding: 1rem 1.25rem; background: var(--card); border: 2px solid var(--ink); border-left: 8px solid var(--sign); }
+.link-card h2 { font-size: 1.2rem; margin-bottom: .25rem; }
+.link-card p { margin: .25rem 0 .75rem; }
+.link-row { display: flex; flex-wrap: wrap; gap: .5rem; }
+.link-row input { flex: 1 1 18rem; font-family: var(--font-data); font-size: .9rem; }
+
+.pre { white-space: pre-wrap; overflow-wrap: anywhere; margin: .25rem 0 0; padding: .6rem .8rem; background: #f6f8fb; border-left: 4px solid var(--sign-deep); }
+.check { display: flex; align-items: center; gap: .5rem; min-height: 2.5rem; }
+.check input { width: 1.2rem; height: 1.2rem; min-height: 0; }
+.toolbar.three { grid-template-columns: minmax(12rem, 2fr) minmax(9rem, 1fr) auto; align-items: end; }
+@media (max-width: 760px) { .toolbar.three { grid-template-columns: 1fr; } }

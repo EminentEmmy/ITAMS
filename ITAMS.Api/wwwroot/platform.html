@@ -3,25 +3,23 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="/favicon-platform.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <title>ITAMS Platform console</title>
   <link rel="stylesheet" href="/css/app.css">
+  <link rel="stylesheet" href="/css/shell.css">
+  <link rel="stylesheet" href="/css/topbar.css">
+  <link rel="stylesheet" href="/css/orgs.css">
 </head>
 <body class="pending">
-  <header class="signage signage-platform">
-    <div class="brand">
-      <span class="mark" aria-hidden="true"></span>
-      <span class="brand-name">ITAMS</span>
-      <span class="tenant">Platform console</span>
-    </div>
-    <div class="who">
-      <span id="user-name"></span>
-      <span class="role">Platform owner</span>
-      <a class="btn btn-quiet" href="/change-password.html">Change password</a>
-      <button id="logout" class="btn btn-quiet" type="button">Sign out</button>
-    </div>
-  </header>
+  <div class="shell platform">
+    <aside id="sidebar" class="sidebar" aria-label="Sidebar"></aside>
 
-  <main>
+    <div class="content">
+      <header id="topbar" class="topbar"></header>
+
+      <main id="main" tabindex="-1">
     <!-- ================= Organizations ================= -->
     <section id="view-list">
       <div class="page-head">
@@ -30,6 +28,30 @@
       </div>
 
       <dl id="ledger" class="ledger"></dl>
+      <div id="org-tools" hidden>
+        <div class="toolbar">
+          <label class="field"><span>Search organizations</span>
+            <input id="org-search" type="search" maxlength="100" placeholder="Name or company code" autocomplete="off"></label>
+          <label class="field"><span>Status</span>
+            <select id="org-status-filter">
+              <option value="">All</option>
+              <option value="active">Active</option>
+              <option value="suspended">Suspended</option>
+            </select></label>
+          <label class="field"><span>Sort by</span>
+            <select id="org-sort">
+              <option value="name">Name (A to Z)</option>
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+              <option value="activity">Recently active</option>
+              <option value="users">Most users</option>
+              <option value="assets">Most assets</option>
+              <option value="repair">Most assets under repair</option>
+            </select></label>
+        </div>
+        <p id="org-count" class="muted org-count" aria-live="polite"></p>
+      </div>
+
       <div id="list-error" class="alert" role="alert" hidden></div>
       <div id="orgs-host"></div>
     </section>
@@ -96,7 +118,9 @@
         </div>
       </div>
     </section>
-  </main>
+      </main>
+    </div>
+  </div>
 
   <!-- New organization -->
   <dialog id="org-dialog" aria-labelledby="org-dialog-title">

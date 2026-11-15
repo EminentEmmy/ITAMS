@@ -30,6 +30,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<MaintenanceLog> MaintenanceLogs => Set<MaintenanceLog>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<SecurityAuditLog> SecurityAuditLogs => Set<SecurityAuditLog>();
+    public DbSet<Ticket> Tickets => Set<Ticket>();
 
     // Read by EF on every query (per DbContext instance = per request).
     // If there is no authenticated user this is null, so every filtered query returns nothing (fail closed).
@@ -110,6 +111,10 @@ public class ApplicationDbContext : DbContext
             e.HasIndex(l => new { l.TenantId, l.TimestampUtc });
             e.HasQueryFilter(l => l.TenantId == CurrentTenantId);
         });
+
+
+        b.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);   // picks up TicketConfiguration
+        b.Entity<Ticket>().HasQueryFilter(t => t.TenantId == CurrentTenantId);
 
         // No cascading deletes anywhere: this is an audit-heavy system.
         foreach (var fk in b.Model.GetEntityTypes().SelectMany(t => t.GetForeignKeys()))

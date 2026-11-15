@@ -1,35 +1,24 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ITAMS: Assets</title>
-  <link rel="stylesheet" href="/css/app.css">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ITAMS: Assets</title>
+    <link rel="stylesheet" href="/css/app.css">
+    <link rel="stylesheet" href="/css/shell.css">
+    <link rel="stylesheet" href="/css/tickets.css">
+    <link rel="stylesheet" href="/css/topbar.css">
 </head>
 <body class="pending">
-  <header class="signage">
-    <div class="brand">
-      <span class="mark" aria-hidden="true"></span>
-      <span class="brand-name">ITAMS</span>
-      <span id="tenant-name" class="tenant"></span>
-    </div>
-    <div class="who">
-      <span id="user-name"></span>
-      <span id="user-role" class="role"></span>
-      <a class="btn btn-quiet" href="/change-password.html">Change password</a>
-      <button id="logout" class="btn btn-quiet" type="button">Sign out</button>
-    </div>
-  </header>
+  <div class="shell">
+    <aside id="sidebar" class="sidebar" aria-label="Sidebar"></aside>
 
-  <main>
-    <div id="tabs" class="tabs" role="tablist" aria-label="Sections" hidden>
-      <button id="tab-assets" class="tab" type="button" role="tab" aria-selected="true" aria-controls="panel-assets">Assets</button>
-      <button id="tab-staff" class="tab" type="button" role="tab" aria-selected="false" aria-controls="panel-staff" hidden>Staff</button>
-      <button id="tab-audit" class="tab" type="button" role="tab" aria-selected="false" aria-controls="panel-audit" hidden>Audit trail</button>
-    </div>
+    <div class="content">
+      <header id="topbar" class="topbar"></header>
 
+      <main id="main" tabindex="-1">
     <!-- ================= Assets ================= -->
-    <section id="panel-assets" role="tabpanel" aria-labelledby="tab-assets">
+    <section id="panel-assets">
       <div class="page-head">
         <h1>Assets</h1>
         <button id="add-asset" class="btn btn-sign" type="button" hidden>Add asset</button>
@@ -54,8 +43,62 @@
       </div>
     </section>
 
+    <!-- ================= Tickets ================= -->
+    <section id="panel-tickets" hidden>
+      <div class="page-head">
+        <h1>Tickets</h1>
+        <button id="new-ticket" class="btn btn-sign" type="button">New ticket</button>
+      </div>
+      <p id="tickets-intro" class="muted"></p>
+
+      <!-- administrators only: the public report link -->
+      <div id="link-card" class="link-card" hidden>
+        <h2>Public report link</h2>
+        <p class="muted">Anyone with this link can report a fault without signing in, so staff can still reach IT when nobody with an account is around.
+          The link only lets people send a report. It cannot show any ticket or data. Share it on notice boards, by message, or on a QR poster.</p>
+        <div id="link-on" hidden>
+          <div class="link-row">
+            <input id="link-url" readonly aria-label="Public report link">
+            <button id="link-copy" class="btn" type="button">Copy link</button>
+          </div>
+          <p>
+            <button id="link-rotate" class="btn btn-quiet btn-small" type="button">Create a new link</button>
+            <button id="link-off" class="btn btn-quiet btn-small" type="button">Turn off</button>
+          </p>
+        </div>
+        <div id="link-off-state" hidden>
+          <p>The public link is turned off.</p>
+          <button id="link-create" class="btn btn-sign" type="button">Create public link</button>
+        </div>
+      </div>
+
+      <div class="toolbar three">
+        <label class="field"><span>Search reference, title, person or place</span><input id="ticket-search" type="search" maxlength="100"></label>
+        <label class="field"><span>Show</span>
+          <select id="ticket-filter">
+            <option value="open">Open (new and in progress)</option>
+            <option value="">All tickets</option>
+            <option value="New">New</option>
+            <option value="InProgress">In progress</option>
+            <option value="Resolved">Resolved</option>
+            <option value="Closed">Closed</option>
+          </select></label>
+        <label id="ticket-mine-wrap" class="check" hidden><input id="ticket-mine" type="checkbox"><span>Assigned to me</span></label>
+      </div>
+
+      <div id="tickets-error" class="alert" role="alert" hidden></div>
+      <div id="tickets-host"></div>
+      <div class="pager">
+        <span id="tickets-range" class="muted" aria-live="polite"></span>
+        <span>
+          <button id="tickets-prev" class="btn btn-quiet" type="button">Previous</button>
+          <button id="tickets-next" class="btn btn-quiet" type="button">Next</button>
+        </span>
+      </div>
+    </section>
+
     <!-- ================= Staff (administrators) ================= -->
-    <section id="panel-staff" role="tabpanel" aria-labelledby="tab-staff" hidden>
+    <section id="panel-staff" hidden>
       <div class="page-head">
         <h1>Staff</h1>
         <button id="add-user" class="btn btn-sign" type="button">Add person</button>
@@ -66,7 +109,7 @@
     </section>
 
     <!-- ================= Audit trail ================= -->
-    <section id="panel-audit" role="tabpanel" aria-labelledby="tab-audit" hidden>
+    <section id="panel-audit" hidden>
       <div class="page-head">
         <h1>Audit trail</h1>
         <label class="field audit-filter"><span>Show</span>
@@ -89,7 +132,9 @@
         </span>
       </div>
     </section>
-  </main>
+      </main>
+    </div>
+  </div>
 
   <!-- Add asset -->
   <dialog id="asset-dialog" aria-labelledby="asset-dialog-title">
@@ -141,6 +186,65 @@
     </div>
     <div class="dlg-foot">
       <button id="decommission" class="btn btn-danger" type="button" hidden>Decommission asset</button>
+    </div>
+  </dialog>
+
+  <!-- New ticket (signed-in people) -->
+  <dialog id="ticket-new-dialog" aria-labelledby="ticket-new-title">
+    <form id="ticket-form" method="dialog" novalidate>
+      <div class="dlg-head"><h2 id="ticket-new-title">New ticket</h2>
+        <button class="btn btn-quiet" type="button" data-close>Close</button></div>
+      <div class="dlg-body">
+        <div id="ticket-error" class="alert" role="alert" hidden></div>
+        <label class="field"><span>What is wrong? (short summary)</span><input id="t-title" required minlength="5" maxlength="150" autocomplete="off"></label>
+        <label class="field"><span>Details</span><textarea id="t-desc" required minlength="10" maxlength="2000"></textarea></label>
+        <div class="grid-2">
+          <label class="field"><span>Type of problem</span><select id="t-category"></select></label>
+          <label class="field"><span>How bad is it?</span><select id="t-impact"></select></label>
+        </div>
+        <div class="grid-2">
+          <label class="field"><span>Where?</span><input id="t-location" maxlength="200" placeholder="e.g. T2 check-in desk 14"></label>
+          <label class="field"><span>Device or serial number (optional)</span><input id="t-asset" maxlength="100" autocomplete="off"></label>
+        </div>
+      </div>
+      <div class="dlg-foot">
+        <button class="btn btn-quiet" type="button" data-close>Cancel</button>
+        <button id="ticket-save" class="btn btn-sign" type="submit">Send ticket</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Ticket detail and handling -->
+  <dialog id="ticket-detail-dialog" aria-labelledby="td-title">
+    <div class="dlg-head"><h2 id="td-title"></h2>
+      <button class="btn btn-quiet" type="button" data-close>Close</button></div>
+    <div class="dlg-body">
+      <div id="td-error" class="alert" role="alert" hidden></div>
+      <dl id="td-facts" class="facts"></dl>
+
+      <div>
+        <h3 class="section-title">Details</h3>
+        <p id="td-description" class="pre"></p>
+      </div>
+      <div id="td-resolution-wrap" hidden>
+        <h3 class="section-title">Resolution</h3>
+        <p id="td-resolution" class="pre"></p>
+      </div>
+
+      <div id="td-edit" hidden>
+        <h3 class="section-title">Handle this ticket</h3>
+        <div class="grid-2">
+          <label class="field"><span>Status</span><select id="td-status"></select></label>
+          <label class="field"><span>Priority</span><select id="td-priority"></select></label>
+        </div>
+        <div class="grid-2">
+          <label class="field"><span>Assigned to</span><select id="td-assignee"></select></label>
+          <label class="field"><span>Linked asset (serial number)</span><input id="td-serial" maxlength="100" autocomplete="off"></label>
+        </div>
+        <label class="field"><span>Resolution note (needed to resolve or close)</span><textarea id="td-notes" maxlength="1800"></textarea></label>
+        <p class="muted">Resolving a ticket that is linked to an asset also records the work in that asset's maintenance history.</p>
+        <p><button id="td-save" class="btn btn-sign" type="button">Save changes</button></p>
+      </div>
     </div>
   </dialog>
 

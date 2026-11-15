@@ -10,6 +10,7 @@ namespace ITAMS.Api.Controllers;
 
 // No TenantId appears anywhere in this file: the DbContext filters reads and stamps writes.
 [ApiController]
+[Authorize(Roles = "TenantAdmin,Technician,Auditor")]
 [Route("api/assets")]
 public class AssetsController(ApplicationDbContext db) : ControllerBase
 {
