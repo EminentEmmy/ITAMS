@@ -31,7 +31,7 @@ jobs:
       ITAMS_TEST_SQL: "Server=localhost,1433;User Id=sa;Password=Ci-Passw0rd!2026;TrustServerCertificate=True"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-dotnet@v4
         with:
