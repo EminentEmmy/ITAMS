@@ -1,0 +1,17 @@
+<Project>
+  <!-- Applies to every project in the solution. -->
+  <PropertyGroup>
+    <!-- Record the exact package versions (and hashes) that were restored, in packages.lock.json next to each project.
+         Builds become repeatable, and an upgrade only happens when you decide it should. Commit those files. -->
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+
+    <!-- Check every package (including indirect ones) against the known-vulnerability database on each restore. -->
+    <NuGetAudit>true</NuGetAudit>
+    <NuGetAuditMode>all</NuGetAuditMode>
+    <NuGetAuditLevel>low</NuGetAuditLevel>
+
+    <!-- A package with a CRITICAL known vulnerability stops the build. (Warnings for lower levels still show.)
+         To make HIGH ones fail too, change to: NU1903;NU1904 -->
+    <WarningsAsErrors>$(WarningsAsErrors);NU1904</WarningsAsErrors>
+  </PropertyGroup>
+</Project>

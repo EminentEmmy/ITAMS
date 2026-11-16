@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read          # the least this job needs
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      sql:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_SA_PASSWORD: "Ci-Passw0rd!2026"
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Ci-Passw0rd!2026' -C -Q 'SELECT 1'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 12
+
+    env:
+      # The tests create and delete their own throw-away databases on this server.
+      ITAMS_TEST_SQL: "Server=localhost,1433;User Id=sa;Password=Ci-Passw0rd!2026;TrustServerCertificate=True"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      # Fails if packages.lock.json is missing or out of date, so nothing drifts silently.
+      - run: dotnet restore --locked-mode
+
+      - run: dotnet build --no-restore -c Release
+
+      - run: dotnet test --no-build -c Release

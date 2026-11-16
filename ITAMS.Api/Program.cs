@@ -13,6 +13,9 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.Text.Encodings.Web;
+using System.Text.Unicode;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -43,7 +46,13 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 builder.Services
     .AddControllers()
-    .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+    .AddJsonOptions(o =>
+    {
+        o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+
+        // Always escape < > & ' in responses (written as \u003C etc.), so raw JSON can never contain a live tag.
+        o.JsonSerializerOptions.Encoder = JavaScriptEncoder.Create(UnicodeRanges.All);
+    });
 
 builder.Services.AddProblemDetails();
 
@@ -112,6 +121,10 @@ builder.Services.AddRateLimiter(o =>
     _ => new FixedWindowRateLimiterOptions { PermitLimit = reportLimit, Window = TimeSpan.FromMinutes(10), QueueLimit = 0 }));
 
 });
+
+
+// 1 MB; the default is about 28 MB and nothing here needs it
+builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = 1_048_576);   
 
 var app = builder.Build();
 
