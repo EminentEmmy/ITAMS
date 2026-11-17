@@ -15,7 +15,8 @@ const ICONS = {
   collapse: 'M11 7l-5 5 5 5 M18 7l-5 5 5 5',
   menu: 'M4 6h16 M4 12h16 M4 18h16',
   tickets: 'M4 7h16v3a2 2 0 0 0 0 4v3H4v-3a2 2 0 0 0 0-4z M14 7v10',
-  bell: 'M6 9a6 6 0 0 1 12 0c0 6 2 7 2 7H4s2-1 2-7 M10 20a2 2 0 0 0 4 0'
+  bell: 'M6 9a6 6 0 0 1 12 0c0 6 2 7 2 7H4s2-1 2-7 M10 20a2 2 0 0 0 4 0',
+  shield: 'M12 3 5 6v6c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6z M9 12l2 2 4-4'
 };
 
 function icon(name) {
@@ -80,6 +81,8 @@ export function initShell({ items, user, orgLabel, roleLabel, variant, onSignOut
         el('div', { class: 'role' }, roleLabel)),
       el('a', { class: 'side-link', href: '/change-password.html', title: 'Change password' },
         icon('key'), el('span', { class: 'nav-label' }, 'Change password')),
+      el('a', { class: 'side-link', href: '/security.html', title: 'Security and sessions' },
+        icon('shield'), el('span', { class: 'nav-label' }, 'Security')),
       el('button', { class: 'side-link', type: 'button', title: 'Sign out', onclick: onSignOut },
         icon('logout'), el('span', { class: 'nav-label' }, 'Sign out')),
       collapseBtn));

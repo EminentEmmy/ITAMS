@@ -75,6 +75,7 @@ public sealed class TestEnvironment : IAsyncLifetime
         Environment.SetEnvironmentVariable("RateLimits__LoginPerMinute", "100000");
         Environment.SetEnvironmentVariable("RateLimits__ApiPerMinute", "100000");
         Environment.SetEnvironmentVariable("RateLimits__PublicReportPer10Minutes", "100000");
+        Environment.SetEnvironmentVariable("Session__ValidationCacheSeconds", "0");   // check the live session on every request
 
         Factory = new ItamsFactory();
     }

@@ -11,7 +11,7 @@ namespace ITAMS.Api.Auth;
 
 public interface ITokenService
 {
-    string CreateAccessToken(AppUser user);
+    string CreateAccessToken(AppUser user, Guid sessionId, DateTime expiresUtc);
     (string Raw, string Hash) CreateRefreshToken();
     string Hash(string rawToken);
 }
@@ -30,14 +30,15 @@ public sealed class TokenService : ITokenService
             SecurityAlgorithms.HmacSha256);
     }
 
-    public string CreateAccessToken(AppUser user)
+    public string CreateAccessToken(AppUser user, Guid sessionId, DateTime expiresUtc)
     {
-        // Short claim names on purpose: sub = user, tid = tenant, role = RBAC, mcp = must change password.
+        // Short claim names on purpose: sub = user, tid = tenant, role = RBAC, sid = session, mcp = must change password.
         var claims = new List<Claim>
         {
             new("sub", user.Id.ToString()),
             new("tid", user.TenantId),
             new("role", user.Role.ToString()),
+            new("sid", sessionId.ToString()),
             new("name", user.FullName),
             new("email", user.Email)
         };
@@ -48,7 +49,7 @@ public sealed class TokenService : ITokenService
             Subject = new ClaimsIdentity(claims),
             Issuer = _options.Issuer,
             Audience = _options.Audience,
-            Expires = DateTime.UtcNow.AddMinutes(_options.AccessTokenMinutes),
+            Expires = expiresUtc,       // never later than the session's hard ceiling
             SigningCredentials = _credentials
         };
 

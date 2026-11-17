@@ -205,6 +205,15 @@ namespace ITAMS.Infrastructure.Migrations
                     b.Property<DateTime?>("RevokedUtc")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime>("SessionExpiresUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("SessionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("SessionStartedUtc")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("TenantId")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -223,6 +232,8 @@ namespace ITAMS.Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("SessionId");
 
                     b.HasIndex("TokenHash")
                         .IsUnique();

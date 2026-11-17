@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Security and sessions</title>
+  <link rel="stylesheet" href="/css/app.css">
+  <link rel="stylesheet" href="/css/security.css">
+</head>
+<body class="pending">
+  <header class="sec-head">
+    <span class="mark" aria-hidden="true"></span>
+    <span class="sec-brand">ITAMS</span>
+    <a id="back" class="btn btn-quiet sec-back" href="/index.html">Back to the app</a>
+  </header>
+
+  <main class="sec-main">
+    <h1>Security and sessions</h1>
+    <p class="muted">These are the places you are signed in right now. If you do not recognise one, sign it out and change your password.</p>
+
+    <div id="error" class="alert" role="alert" hidden></div>
+    <div id="sessions-host"></div>
+
+    <div class="sec-actions">
+      <button id="sign-out-others" class="btn" type="button">Sign out all other sessions</button>
+      <button id="sign-out-all" class="btn btn-danger" type="button">Sign out everywhere</button>
+      <a class="btn btn-quiet" href="/change-password.html">Change password</a>
+    </div>
+
+    <p class="muted">A sign-in ends by itself after a fixed time, however busy you are. Signing a session out here stops it within seconds.</p>
+  </main>
+
+  <div id="toast" class="toast" role="status" hidden></div>
+  <script type="module" src="/js/security.js"></script>
+</body>
+</html>

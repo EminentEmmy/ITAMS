@@ -3,6 +3,7 @@ using ITAMS.Api.Auth;
 using ITAMS.Api.Dtos;
 using ITAMS.Domain.Abstractions;
 using ITAMS.Domain.Entities;
+using ITAMS.Domain.Enums;
 using ITAMS.Infrastructure.Data;
 using ITAMS.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
@@ -20,6 +21,7 @@ public class AuthController(
     IPasswordHasher hasher,
     ITokenService tokens,
     IOptions<JwtOptions> jwtOptions,
+    IOptions<SessionLimits> sessionOptions,
     ICurrentUserService me) : ControllerBase
 {
     private const string GenericLoginError = "Invalid credentials, or the account is locked.";
@@ -124,6 +126,25 @@ public class AuthController(
             return Unauthorized();
         }
 
+        // Tokens issued before sessions existed carry no session: sign in again once.
+        if (stored.SessionId == Guid.Empty)
+        {
+            stored.RevokedUtc = now;
+            await db.SaveChangesAsync(ct);
+            AuthCookies.Clear(Response);
+            return Unauthorized();
+        }
+
+        // The hard ceiling: however often it was refreshed, a sign-in ends when its session ends.
+        if (now >= stored.SessionExpiresUtc)
+        {
+            await RevokeSessionAsync(stored.SessionId, now, ct);
+            Audit(stored.TenantId, stored.UserId.ToString(), "SESSION_EXPIRED", stored.UserId.ToString());
+            await db.SaveChangesAsync(ct);
+            AuthCookies.Clear(Response);
+            return Unauthorized();
+        }
+
         var tenantActive = await db.Tenants.AnyAsync(t => t.Id == stored.TenantId && t.IsActive, ct);
         var user = tenantActive
             ? await db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Id == stored.UserId && u.IsActive, ct)
@@ -137,7 +158,8 @@ public class AuthController(
             return Unauthorized();
         }
 
-        var session = CreateSession(user);
+        // same session, same ceiling: only the tokens are replaced
+        var session = CreateSession(user, new SessionInfo(stored.SessionId, stored.SessionStartedUtc, stored.SessionExpiresUtc));
         stored.RevokedUtc = now;
         stored.ReplacedByTokenHash = session.RefreshHash;
         await db.SaveChangesAsync(ct);
@@ -160,6 +182,7 @@ public class AuthController(
             if (stored is not null)
             {
                 stored.RevokedUtc = DateTime.UtcNow;
+                if (stored.SessionId != Guid.Empty) await RevokeSessionAsync(stored.SessionId, DateTime.UtcNow, ct);
                 Audit(stored.TenantId, stored.UserId.ToString(), "LOGOUT", stored.UserId.ToString());
                 await db.SaveChangesAsync(ct);
             }
@@ -217,13 +240,23 @@ public class AuthController(
 
     // ------------------------------------------------------------------ helpers
     private sealed record Session(string Access, DateTime AccessExpires, string RefreshRaw, string RefreshHash, DateTime RefreshExpires);
+    private sealed record SessionInfo(Guid Id, DateTime StartedUtc, DateTime ExpiresUtc);
 
-    private Session CreateSession(AppUser user)
+    private static DateTime Earlier(DateTime a, DateTime b) => a < b ? a : b;
+
+    /// <summary>A new sign-in starts a new session with its own hard ceiling; a refresh passes the existing session in.</summary>
+    private Session CreateSession(AppUser user, SessionInfo? existing = null)
     {
         var jwt = jwtOptions.Value;
+        var limits = sessionOptions.Value;
         var now = DateTime.UtcNow;
+
+        var info = existing ?? new SessionInfo(
+            Guid.NewGuid(), now, now.AddHours(user.Role == UserRole.SuperAdmin ? limits.OwnerMaxHours : limits.MaxHours));
+
         var (rawRefresh, refreshHash) = tokens.CreateRefreshToken();
-        var refreshExpires = now.AddDays(jwt.RefreshTokenDays);
+        var refreshExpires = Earlier(now.AddDays(jwt.RefreshTokenDays), info.ExpiresUtc);
+        var accessExpires = Earlier(now.AddMinutes(jwt.AccessTokenMinutes), info.ExpiresUtc);
 
         db.RefreshTokens.Add(new RefreshToken
         {
@@ -232,10 +265,20 @@ public class AuthController(
             TokenHash = refreshHash,
             ExpiresUtc = refreshExpires,
             CreatedByIp = Trunc(me.IpAddress, 45),
-            UserAgent = Trunc(me.UserAgent, 255)
+            UserAgent = Trunc(me.UserAgent, 255),
+            SessionId = info.Id,
+            SessionStartedUtc = info.StartedUtc,
+            SessionExpiresUtc = info.ExpiresUtc
         });
 
-        return new Session(tokens.CreateAccessToken(user), now.AddMinutes(jwt.AccessTokenMinutes), rawRefresh, refreshHash, refreshExpires);
+        return new Session(tokens.CreateAccessToken(user, info.Id, accessExpires), accessExpires, rawRefresh, refreshHash, refreshExpires);
+    }
+
+    private async Task RevokeSessionAsync(Guid sessionId, DateTime now, CancellationToken ct)
+    {
+        var active = await db.RefreshTokens.IgnoreQueryFilters()
+            .Where(t => t.SessionId == sessionId && t.RevokedUtc == null).ToListAsync(ct);
+        foreach (var t in active) t.RevokedUtc = now;
     }
 
     private void Audit(string tenantId, string userId, string action, string entityId) =>

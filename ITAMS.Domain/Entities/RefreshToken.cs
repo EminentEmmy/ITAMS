@@ -15,4 +15,11 @@ public class RefreshToken
 
     public DateTime? RevokedUtc { get; set; }
     public string? ReplacedByTokenHash { get; set; }
+
+    // ---- the login this token belongs to ("session"). Rotating a token never changes these three values.
+    /// <summary>One id per sign-in. Every access token carries it, and every request is checked against it.</summary>
+    public Guid SessionId { get; set; }
+    public DateTime SessionStartedUtc { get; set; }
+    /// <summary>Hard ceiling: refreshing can never push a login past this moment.</summary>
+    public DateTime SessionExpiresUtc { get; set; }
 }

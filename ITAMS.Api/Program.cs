@@ -15,7 +15,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text.Encodings.Web;
 using System.Text.Unicode;
-using System.Text.Json.Serialization;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -56,6 +56,11 @@ builder.Services
 
 builder.Services.AddProblemDetails();
 
+
+builder.Services.Configure<ITAMS.Api.Auth.SessionOptions>(builder.Configuration.GetSection("Session"));
+
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<ISessionValidator, SessionValidator>();
 // ---------------------------------------------------------------- authentication / authorization
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -84,6 +89,20 @@ builder.Services
             {
                 ctx.Token = ctx.Request.Cookies[AuthCookies.Access];
                 return Task.CompletedTask;
+            },
+
+            OnTokenValidated = async ctx =>
+            {
+                var role = ctx.Principal?.FindFirstValue("role");
+                if (!Guid.TryParse(ctx.Principal?.FindFirstValue("sid"), out var sessionId) || role is null)
+                {
+                    ctx.Fail("The token carries no session.");
+                    return;
+                }
+
+                var validator = ctx.HttpContext.RequestServices.GetRequiredService<ISessionValidator>();
+                if (!await validator.IsValidAsync(sessionId, role, ctx.HttpContext.RequestAborted))
+                    ctx.Fail("The session has ended.");
             }
         };
     });
